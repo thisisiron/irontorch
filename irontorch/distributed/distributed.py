@@ -2,6 +2,10 @@ import torch
 from torch import distributed as dist
 
 
+def is_primary():
+    return get_rank() == 0
+
+
 def get_rank():
     if not dist.is_available():
         return 0
