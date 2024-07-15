@@ -1,5 +1,6 @@
 import torch
 from torch import distributed as dist
+from torch.utils import data
 
 
 def is_primary():
@@ -26,3 +27,11 @@ def upwrap_parallel(model):
    return model.module if is_parallel(model) else model
 
 
+def get_data_sampler(dataset, shuffle, distributed):
+    if distributed:
+        return data.distributed.DistributedSampler(dataset, shuffle=shuffle)
+
+    if shuffle:
+        return data.RandomSampler(dataset)
+    else:
+        return data.SequentialSampler(dataset)
