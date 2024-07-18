@@ -28,6 +28,21 @@ def get_world_size() -> int:
     return dist.get_world_size()
 
 
+def synchronize():
+    if not dist.is_available():
+        return
+
+    if not dist.is_initialized():
+        return
+
+    world_size = dist.get_world_size()
+
+    if world_size == 1:
+        return
+
+    dist.barrier()
+
+
 def reduce_dict(input_dict: Dict[str, torch.Tensor], average: bool = True) -> Dict[str, torch.Tensor]:
     world_size = get_world_size()
     if world_size < 2:
