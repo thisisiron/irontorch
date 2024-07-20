@@ -9,4 +9,6 @@ from irontorch.distributed.distributed import (
     get_data_sampler,
 )
 
+from irontorch.distributed.parser import parse_and_load_config
+
 from irontorch.distributed.launch import run
