@@ -27,7 +27,7 @@ def run(
     if world_size > 1:
         set_omp_threads()
 
-        elastic_launch(config=launch_config, entrypoint=elastic_worker)(fn, conf)
+        elastic_launch(config=conf.launch_config, entrypoint=elastic_worker)(fn, conf)
     else:
         fn(*conf)
 

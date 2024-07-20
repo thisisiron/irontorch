@@ -1,4 +1,4 @@
-from irontorch.distributed import (
+from irontorch.distributed.distributed import (
     get_rank,
     is_primary,
     synchronize,
@@ -9,4 +9,4 @@ from irontorch.distributed import (
     get_data_sampler,
 )
 
-from irontorch.launch import run
+from irontorch.distributed.launch import run

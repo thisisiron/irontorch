@@ -131,12 +131,11 @@ def add_elastic_args(parser):
     return parser
 
 
-
 def parse_and_load_config():
     parser = argparse.ArgumentParser()
-    parser = preset_argparser()
     # TODO: add arguments
     parser = add_elastic_args(parser)
     args = parser.parse_args()
 
     launch_config = elastic_config(args)
+    return launch_config
