@@ -24,21 +24,25 @@ def parse_min_max_nodes(n_node):
     return min_node, max_node
 
 
+
 def local_world_size(n_gpu):
-    if isinstance(n_gpu, int):
-        return n_gpu
+    try:
+        return int(n_gpu)
 
-    elif n_gpu == "cpu":
-        return os.cpu_count()
+    except ValueError:
+        if n_gpu == "cpu":
+            n_proc = os.cpu_count()
 
-    elif n_gpu == "gpu":
-        if not torch.cuda.is_available():
-            raise ValueError("CUDA is not available")
+        elif n_gpu == "gpu":
+            if not torch.cuda.is_available():
+                raise ValueError("CUDA is not available")
 
-        return torch.cuda.device_count()
+            n_proc = torch.cuda.device_count()
 
-    else:
-        raise ValueError(f"Unsupported n_proc value: {n_gpu}")
+        else:
+            raise ValueError(f"Unsupported n_proc value: {n_gpu}")
+
+        return n_proc
 
 
 def get_rdzv_endpoint(args, max_node):
