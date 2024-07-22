@@ -52,8 +52,5 @@ def elastic_worker(fn, args):
 
     torch.cuda.set_device(local_rank)
 
-    if dist_fn.LOCAL_PROCESS_GROUP is not None:
-        raise ValueError("torch.distributed.LOCAL_PROCESS_GROUP is not None")
-
     fn(*args)
 
