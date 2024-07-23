@@ -135,9 +135,9 @@ def add_elastic_args(parser):
     return parser
 
 
-def parse_and_load_config():
-    parser = argparse.ArgumentParser()
-    # TODO: add arguments
+def parse_and_load_config(parser=None):
+    if parser is None:
+        parser = argparse.ArgumentParser()
     parser = add_elastic_args(parser)
     args = parser.parse_args()
 
