@@ -18,6 +18,7 @@ class GradScaler:
             clip_mode='norm',
             need_update=True,
     ):
+        optimizer.zero_grad()
         self.grad_scaler.scale(loss).backward()
         if need_update:
             if clip_grad is not None:
