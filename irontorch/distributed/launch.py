@@ -29,10 +29,10 @@ def run(
 
         elastic_launch(config=conf.launch_config, entrypoint=elastic_worker)(fn, conf)
     else:
-        fn(*conf)
+        fn(conf)
 
 
-def elastic_worker(fn, args):
+def elastic_worker(fn: Callable, conf: Tuple):
     if not torch.cuda.is_available():
         raise OSError("CUDA is not available. Please check your environments")
 
@@ -52,5 +52,5 @@ def elastic_worker(fn, args):
 
     torch.cuda.set_device(local_rank)
 
-    fn(*args)
+    fn(conf)
 

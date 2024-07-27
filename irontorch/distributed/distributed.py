@@ -29,7 +29,7 @@ def get_world_size() -> int:
     return dist.get_world_size()
 
 
-def synchronize():
+def synchronize() -> None:
     if not dist.is_available():
         return
 

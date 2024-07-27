@@ -6,12 +6,20 @@ import argparse
 
 from omegaconf import OmegaConf, DictConfig
 
-from typing import Union
+from typing import Union, Any, Optional
 
 import torch
 from torch.distributed.elastic.multiprocessing import Std
 from torch.distributed.elastic.rendezvous.utils import _parse_rendezvous_config
 from torch.distributed.launcher.api import LaunchConfig
+
+
+from pydantic import BaseModel, StrictBool
+class Config(BaseModel):
+    class Config:
+        extra = 'allow'
+    launch_config: Any
+    distributed: Optional[StrictBool]
 
 
 def parse_min_max_nodes(n_node):
@@ -160,6 +168,10 @@ def load_config(file_path: str) -> Union[DictConfig, None]:
     return config
 
 
+def map_config(config: DictConfig, config_class: BaseModel):
+    return config_class(**config)
+
+
 def parse_and_load_config(config_path, parser=None):
     if parser is None:
         parser = argparse.ArgumentParser()
@@ -167,8 +179,10 @@ def parse_and_load_config(config_path, parser=None):
     args = parser.parse_args()
 
     conf = load_config(config_path)
+    conf = map_config(conf, Config)
 
     launch_config = elastic_config(args)
-    conf.launch_config = vars(launch_config)
+    conf.launch_config = launch_config
+    conf.n_gpu = launch_config.nproc_per_node
 
     return conf 
