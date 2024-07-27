@@ -1,0 +1,8 @@
+data:
+  train_path: "data/train"
+  val_path: "data/val"
+  test_path: "data/test"
+
+batch_size: 32
+lr: 0.001
+epochs: 2
