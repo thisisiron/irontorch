@@ -1,7 +1,12 @@
-import argparse
-import sys
 import os
+import sys
+import json
+import yaml
+import argparse
 
+from omegaconf import OmegaConf, DictConfig
+
+from typing import Union
 
 import torch
 from torch.distributed.elastic.multiprocessing import Std
@@ -135,11 +140,35 @@ def add_elastic_args(parser):
     return parser
 
 
-def parse_and_load_config(parser=None):
+def load_config(file_path: str) -> Union[DictConfig, None]:
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"The file '{file_path}' does not exist.")
+
+    file_extension = os.path.splitext(file_path)[1].lower()
+
+    if file_extension == '.json':
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+        config = OmegaConf.create(data)
+    elif file_extension in ['.yaml', '.yml']:
+        with open(file_path, 'r') as f:
+            data = yaml.safe_load(f)
+        config = OmegaConf.create(data)
+    else:
+        raise ValueError(f"Unsupported file extension '{file_extension}'.")
+
+    return config
+
+
+def parse_and_load_config(config_path, parser=None):
     if parser is None:
         parser = argparse.ArgumentParser()
     parser = add_elastic_args(parser)
     args = parser.parse_args()
 
+    conf = load_config(config_path)
+
     launch_config = elastic_config(args)
-    return launch_config
+    conf.launch_config = vars(launch_config)
+
+    return conf 
