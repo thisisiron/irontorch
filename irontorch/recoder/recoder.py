@@ -5,7 +5,7 @@ import logging
 from irontorch import distributed as dist
 
 
-def get_logger(name, save_dir, distributed_rank=None, filename="log.txt"):
+def get_logger(save_dir, name='main', distributed_rank=None, filename="log.txt"):
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
     # don't log results for the non-master process
@@ -29,9 +29,17 @@ def get_logger(name, save_dir, distributed_rank=None, filename="log.txt"):
     return logger
 
 
+def get_decimal(value):
+    for i in range(10):
+        if value >= 10 ** (-i) - 1e-10:
+            return i
+
+    return 10
+
+
 class Logger:
-    def __init__(self):
-        self.logger = get_logger()
+    def __init__(self, save_dir, rank):
+        self.logger = get_logger(save_dir, distributed_rank=rank)
 
     def log(self, step, **kwargs):
         panels = [f"step: {step}"]
