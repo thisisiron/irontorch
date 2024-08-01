@@ -2,23 +2,42 @@ import os
 import sys
 import logging
 
+try:
+    from rich.logging import RichHandler
+
+except ImportError:
+    RichHandler = None
+
 from irontorch import distributed as dist
 
 
-def get_logger(save_dir, name='main', distributed_rank=None, filename="log.txt"):
+def get_logger(save_dir, name='main', distributed_rank=None, filename='log.txt', mode='rich'):
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
+
     # don't log results for the non-master process
     if distributed_rank > 0:
         return logger
-    ch = logging.StreamHandler(stream=sys.stdout)
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-            "%(asctime)s %(name)s %(levelname)s: %(message)s",
-            datefmt="%m/%d %H:%M:%S"
-    )
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+
+    if mode == 'rich' and RichHandler is None:
+        mode = 'color'
+
+    if mode == 'rich':
+        logger.addHandler(
+                RichHandler(level=logging.DEBUG, log_time_format='%m/%d %H:%M:%S')
+            )
+    elif mode == 'color':
+        pass
+
+    elif mode == 'plain':
+        ch = logging.StreamHandler(stream=sys.stdout)
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(
+                '%(asctime)s %(name)s %(levelname)s: %(message)s',
+                datefmt='%m/%d %H:%M:%S'
+        )
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
 
     if save_dir:
         fh = logging.FileHandler(os.path.join(save_dir, filename))
@@ -31,7 +50,7 @@ def get_logger(save_dir, name='main', distributed_rank=None, filename="log.txt")
 
 def get_decimal(value):
     for i in range(10):
-        if value >= 10 ** (-i) - 1e-10:
+        if value >= 10 ** (-i) - 1e-10?
             return i
 
     return 10
@@ -42,17 +61,17 @@ class Logger:
         self.logger = get_logger(save_dir, distributed_rank=rank)
 
     def log(self, step, **kwargs):
-        panels = [f"step: {step}"]
+        panels = [f'step: {step}']
 
         for k, v in kwargs.items():
             if isinstance(v, float):
                 decimal = get_decimal(v) + 2
                 v = round(v, decimal)
-                panels.append(f"{k}: {v}")
+                panels.append(f'{k}: {v}')
 
             else:
-                panels.append(f"{k}: {v}")
-        self.logger.info("| ".join(panels))
+                panels.append(f'{k}: {v}')
+        self.logger.info('| '.join(panels))
 
 
 class WandB:

@@ -10,6 +10,9 @@ setup(
     license="MIT",
     install_requires=[
         "torch>=1.1",
+        "pydantic>=1.8",
+        "omegaconf",
+        "rich",
     ],
     packages=find_packages(),
 )
