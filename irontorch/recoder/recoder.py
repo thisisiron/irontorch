@@ -23,9 +23,10 @@ def get_logger(save_dir, name='main', distributed_rank=None, filename='log.txt',
         mode = 'color'
 
     if mode == 'rich':
-        logger.addHandler(
-                RichHandler(level=logging.DEBUG, log_time_format='%m/%d %H:%M:%S')
-            )
+        rh = RichHandler(level=logging.DEBUG, log_time_format='%m/%d %H:%M:%S')
+        logger.addHandler(rh)
+        formatter = rh.formatter
+
     elif mode == 'color':
         pass
 
@@ -50,15 +51,15 @@ def get_logger(save_dir, name='main', distributed_rank=None, filename='log.txt',
 
 def get_decimal(value):
     for i in range(10):
-        if value >= 10 ** (-i) - 1e-10?
+        if value >= 10 ** (-i) - 1e-10:
             return i
 
     return 10
 
 
 class Logger:
-    def __init__(self, save_dir, rank):
-        self.logger = get_logger(save_dir, distributed_rank=rank)
+    def __init__(self, save_dir, rank, mode):
+        self.logger = get_logger(save_dir, distributed_rank=rank, mode=mode)
 
     def log(self, step, **kwargs):
         panels = [f'step: {step}']
