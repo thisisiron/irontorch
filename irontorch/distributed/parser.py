@@ -6,12 +6,12 @@ import argparse
 
 from omegaconf import OmegaConf, DictConfig
 
-from typing import Union, Any, Optional
-
 import torch
 from torch.distributed.elastic.multiprocessing import Std
 from torch.distributed.elastic.rendezvous.utils import _parse_rendezvous_config
 from torch.distributed.launcher.api import LaunchConfig
+
+from typing import Union, Any, Optional
 
 
 from pydantic import BaseModel, StrictBool
@@ -35,7 +35,6 @@ def parse_min_max_nodes(n_node):
         raise ValueError(f'n_node={n_node} is not in "MIN:MAX" format')
 
     return min_node, max_node
-
 
 
 def local_world_size(n_gpu):
