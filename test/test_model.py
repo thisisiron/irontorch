@@ -12,6 +12,7 @@ import os
 import irontorch
 print(irontorch.__version__)
 from irontorch import distributed as dist
+from irontorch.util import GradScaler, set_seed
 
 
 def cleanup():
@@ -50,6 +51,8 @@ class SimpleNN(nn.Module):
 
 
 def train_model(conf):
+    set_seed()
+
     conf.distributed = conf.n_gpu > 1
     rank = dist.get_rank()
     print(f'Rank: {rank}')
@@ -63,6 +66,7 @@ def train_model(conf):
     
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=conf.lr, momentum=0.9)
+    grad_scaler = GradScaler()
     
     for epoch in range(conf.epochs):
         model.train()
@@ -70,11 +74,12 @@ def train_model(conf):
         # trainloader.sampler.set_epoch(epoch)
         for inputs, labels in trainloader:
             inputs, labels = inputs.to(device), labels.to(device)
-            optimizer.zero_grad()
+            # optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+            grad_scaler(loss, optimizer)
+            # loss.backward()
+            # optimizer.step()
             running_loss += loss.item()
         print(f"Rank {rank}, Epoch {epoch+1}, Loss: {running_loss/len(trainloader)}")
 
