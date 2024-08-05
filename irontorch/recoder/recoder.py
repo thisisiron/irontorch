@@ -2,6 +2,8 @@ import os
 import sys
 import logging
 
+from termcolor import colored
+
 try:
     from rich.logging import RichHandler
 
@@ -11,9 +13,32 @@ except ImportError:
 from irontorch import distributed as dist
 
 
-def get_logger(save_dir, name='main', distributed_rank=None, filename='log.txt', mode='rich'):
+class _ColorfulFormatter(logging.Formatter):
+    def __init__(self, *args, **kwargs):
+        self._root_name = kwargs.pop("root_name") + "."
+        self._abbrev_name = kwargs.pop("abbrev_name", "")
+        if len(self._abbrev_name):
+            self._abbrev_name = self._abbrev_name + "."
+        super().__init__(*args, **kwargs)
+
+    def formatMessage(self, record):
+        record.name = record.name.replace(self._root_name, self._abbrev_name)
+        log = super().formatMessage(record)
+        if record.levelno == logging.WARNING:
+            prefix = colored("WARNING", "red", attrs=["blink"])
+        elif record.levelno == logging.ERROR or record.levelno == logging.CRITICAL:
+            prefix = colored("ERROR", "red", attrs=["blink", "underline"])
+        else:
+            return log
+        return prefix + " " + log
+
+
+def get_logger(save_dir, distributed_rank=None, filename='log.txt', mode='rich', name='main', abbrev_name=None):
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
+
+    if abbrev_name is None:
+        abbrev_name = name
 
     # don't log results for the non-master process
     if distributed_rank > 0:
@@ -28,13 +53,22 @@ def get_logger(save_dir, name='main', distributed_rank=None, filename='log.txt',
         formatter = rh.formatter
 
     elif mode == 'color':
-        pass
+        ch = logging.StreamHandler(stream=sys.stdout)
+        ch.setLevel(logging.DEBUG)
+        formatter = _ColorfulFormatter(
+            colored("[%(asctime)s %(name)s]: ", "green") + "%(levelname)s: %(message)s",
+            datefmt="%m/%d %H:%M:%S",
+            root_name=name,
+            abbrev_name=str(abbrev_name),
+        )
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
 
     elif mode == 'plain':
         ch = logging.StreamHandler(stream=sys.stdout)
         ch.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
-                '%(asctime)s %(name)s %(levelname)s: %(message)s',
+                '[%(asctime)s %(name)s]: %(levelname)s: %(message)s',
                 datefmt='%m/%d %H:%M:%S'
         )
         ch.setFormatter(formatter)
@@ -58,8 +92,8 @@ def get_decimal(value):
 
 
 class Logger:
-    def __init__(self, save_dir, rank, mode):
-        self.logger = get_logger(save_dir, distributed_rank=rank, mode=mode)
+    def __init__(self, save_dir, name, rank, mode):
+        self.logger = get_logger(save_dir, name=name, distributed_rank=rank, mode=mode)
 
     def log(self, step, **kwargs):
         panels = [f'step: {step}']
@@ -72,7 +106,7 @@ class Logger:
 
             else:
                 panels.append(f'{k}: {v}')
-        self.logger.info('| '.join(panels))
+        self.logger.info(' | '.join(panels))
 
 
 class WandB:
