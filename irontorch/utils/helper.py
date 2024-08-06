@@ -4,7 +4,7 @@ import random
 import torch
 import numpy as np
 
-from irontorch.util import check_library_version 
+from irontorch.utils import check_library_version 
 
 
 TORCH_2_0 = check_library_version(torch.__version__, "2.0.0")
