@@ -12,7 +12,8 @@ def dispatch_clip_grad(parameters, value: float, mode: str = 'norm', norm_type: 
         mode (str): clipping mode, one of 'norm', 'value', 'agc'
         norm_type (float): p-norm, default 2.0
 
-    https://github.com/huggingface/pytorch-image-models/blob/main/timm/utils/clip_grad.py
+    References:
+        https://github.com/huggingface/pytorch-image-models/blob/main/timm/utils/clip_grad.py
     """
     if mode == 'norm':
         torch.nn.utils.clip_grad_norm_(parameters, value, norm_type=norm_type)
