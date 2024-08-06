@@ -66,7 +66,7 @@ def train_model(conf):
     
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=conf.lr, momentum=0.9)
-    grad_scaler = GradScaler()
+    grad_scaler = GradScaler(mixed_precision=True)
     
     for epoch in range(conf.epochs):
         model.train()
