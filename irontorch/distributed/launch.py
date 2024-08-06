@@ -1,13 +1,12 @@
 import os
 
 import torch
-from torch import distributed as dist
 from torch import multiprocessing as mp
 from torch.distributed.launcher.api import elastic_launch
 
 from typing import Callable, Tuple
 
-from irontorch import distributed as dist_fn
+from irontorch import distributed as dist
 
 
 def set_omp_threads():
@@ -39,11 +38,11 @@ def elastic_worker(fn: Callable, conf: Tuple):
     local_rank = int(os.environ["LOCAL_RANK"])
     num_gpus_per_node = int(os.environ["LOCAL_WORLD_SIZE"])
 
-    dist.init_process_group(
+    torch.distributed.init_process_group(
         backend="NCCL",
     )
 
-    dist_fn.synchronize()
+    dist.synchronize()
 
     if num_gpus_per_node > torch.cuda.device_count():
         raise ValueError(
@@ -51,6 +50,8 @@ def elastic_worker(fn: Callable, conf: Tuple):
         )
 
     torch.cuda.set_device(local_rank)
+
+    dist.create_local_process_group(num_gpus_per_machine)
 
     fn(conf)
 
