@@ -12,7 +12,7 @@ import os
 import irontorch
 print(irontorch.__version__)
 from irontorch import distributed as dist
-from irontorch.util import GradScaler, set_seed
+from irontorch.utils import GradScaler, set_seed
 
 
 def cleanup():
