@@ -3,11 +3,12 @@ import random
 
 import torch
 import numpy as np
+import pkg_resources
 
-from irontorch.utils import check_library_version 
 
-
-TORCH_2_0 = check_library_version(torch.__version__, "2.0.0")
+def check_library_version(cur_version, min_version, must_be_same=False):
+    current, minimum = (pkg_resources.parse_version(x) for x in (cur_version, min_version))
+    return (current == minimum) if must_be_same else (current >= minimum)  # bool
 
 
 def set_seed(seed=42, deterministic=False):
@@ -24,7 +25,9 @@ def set_seed(seed=42, deterministic=False):
     if deterministic:  # ensure reproducibility.
         torch.backends.cudnn.benchmark = False 
 
-        if TORCH_2_0:
+        torch_2_0 = check_library_version(torch.__version__, "2.0.0")
+
+        if torch_2_0:
             torch.use_deterministic_algorithms(True, warn_only=True)  # warn if deterministic is not possible
             torch.backends.cudnn.deterministic = True
         else:
