@@ -14,7 +14,6 @@ def is_primary() -> bool:
     return get_rank() == 0
 
 
-# TODO: Return local rank in a multi-node setup
 def get_rank() -> int:
     if not dist.is_available():
         return 0
