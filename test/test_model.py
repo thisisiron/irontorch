@@ -115,6 +115,7 @@ def test_model(rank, model, testloader, distributed=False):
             print(f"Accuracy: {accuracy}%")
     torch.cuda.empty_cache()
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--epoch", type=int, default=10)

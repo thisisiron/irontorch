@@ -45,6 +45,9 @@ def create_local_process_group(num_workers_per_machine: int) -> None:
     Args:
         num_workers_per_machine: the number of worker processes per machine. Typically
           the number of GPUs.
+
+    References:
+        https://github.com/facebookresearch/detectron2/blob/main/detectron2/utils/comm.py
     """
     global _LOCAL_PROCESS_GROUP
     assert _LOCAL_PROCESS_GROUP is None
