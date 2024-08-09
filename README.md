@@ -29,9 +29,3 @@ sampler = dist.get_data_sampler(trainset, shuffle=True, distributed=distributed)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, sampler=sampler)
 ```
 
-
-## References
-
-[detectron2](https://github.com/facebookresearch/detectron2)
-
-[ultralytics](https://github.com/ultralytics/ultralytics)
