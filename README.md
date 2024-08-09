@@ -4,12 +4,14 @@
 
 --------------------------------------------------------------------------------
 
-## Install Irontorch
+
+## Getting Started
+### Install Irontorch
 ```
 pip install irontorch
 ```
 
-## Example
+### Example
 
 ```python
 from irontorch import distributed as dist
@@ -31,4 +33,5 @@ trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, sampl
 ## References
 
 [detectron2](https://github.com/facebookresearch/detectron2)
+
 [ultralytics](https://github.com/ultralytics/ultralytics)
