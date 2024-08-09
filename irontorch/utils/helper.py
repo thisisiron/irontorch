@@ -6,12 +6,12 @@ import numpy as np
 import pkg_resources
 
 
-def check_library_version(cur_version, min_version, must_be_same=False):
+def check_library_version(cur_version: str, min_version: str, must_be_same: bool = False) -> bool:
     current, minimum = (pkg_resources.parse_version(x) for x in (cur_version, min_version))
     return (current == minimum) if must_be_same else (current >= minimum)  # bool
 
 
-def set_seed(seed=42, deterministic=False):
+def set_seed(seed:str = 42, deterministic: bool = False) -> None:
     """
     Set the random seed for reproducibility.
     """

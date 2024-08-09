@@ -3,6 +3,7 @@ import sys
 import logging
 
 from termcolor import colored
+from typing import Optional, Union
 
 try:
     from rich.logging import RichHandler
@@ -14,14 +15,14 @@ from irontorch import distributed as dist
 
 
 class _ColorfulFormatter(logging.Formatter):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: str, **kwargs: Union[str, int]) -> None:
         self._root_name = kwargs.pop("root_name") + "."
         self._abbrev_name = kwargs.pop("abbrev_name", "")
         if len(self._abbrev_name):
             self._abbrev_name = self._abbrev_name + "."
         super().__init__(*args, **kwargs)
 
-    def formatMessage(self, record):
+    def formatMessage(self, record: logging.LogRecord) -> str:
         record.name = record.name.replace(self._root_name, self._abbrev_name)
         log = super().formatMessage(record)
         if record.levelno == logging.WARNING:
@@ -33,7 +34,14 @@ class _ColorfulFormatter(logging.Formatter):
         return prefix + " " + log
 
 
-def get_logger(save_dir, distributed_rank=None, filename='log.txt', mode='rich', name='main', abbrev_name=None):
+def get_logger(
+    save_dir: Optional[str],
+    distributed_rank: Optional[int] = None,
+    filename: str = 'log.txt',
+    mode: str = 'rich',
+    name: str = 'main',
+    abbrev_name: Optional[str] = None
+) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
 
@@ -83,7 +91,7 @@ def get_logger(save_dir, distributed_rank=None, filename='log.txt', mode='rich',
     return logger
 
 
-def get_decimal(value):
+def get_decimal(value: float) -> int:
     for i in range(10):
         if value >= 10 ** (-i) - 1e-10:
             return i
@@ -92,10 +100,10 @@ def get_decimal(value):
 
 
 class Logger:
-    def __init__(self, save_dir, name, rank, mode):
+    def __init__(self, save_dir: str, name: str, rank: int, mode: str) -> None:
         self.logger = get_logger(save_dir, name=name, distributed_rank=rank, mode=mode)
 
-    def log(self, step, **kwargs):
+    def log(self, step: int, **kwargs: Union[str, float, int]) -> None:
         panels = [f'step: {step}']
 
         for k, v in kwargs.items():
@@ -112,14 +120,14 @@ class Logger:
 class WandB:
     def __init__(
         self,
-        project,
-        group=None,
-        name=None,
-        notes=None,
-        resume=None,
-        tags=None,
-        id=None,
-    ):
+        project: str,
+        group: Optional[str] = None,
+        name: Optional[str] = None,
+        notes: Optional[str] = None,
+        resume: Optional[str] = None,
+        tags: Optional[list[str]] = None,
+        id: Optional[str] = None,
+    ) -> None:        
         if dist.is_primary():
             import wandb
 
@@ -135,9 +143,9 @@ class WandB:
 
             self.wandb = wandb
 
-    def log(self, step, **kwargs):
+    def log(self, step: int, **kwargs: Union[str, float, int]) -> None:
         self.wandb.log(kwargs, step=step)
 
-    def __del__(self):
+    def __del__(self) -> None:
         if dist.is_primary():
             self.wandb.finish()
