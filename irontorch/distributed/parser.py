@@ -12,6 +12,7 @@ from torch.distributed.elastic.rendezvous.utils import _parse_rendezvous_config
 from torch.distributed.launcher.api import LaunchConfig
 
 from typing import Union, Any, Optional
+from pydantic import BaseModel
 
 from irontorch.distributed.schema import Config
 
