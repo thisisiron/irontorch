@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import functools
 
 from termcolor import colored
 from typing import Optional, Union
@@ -34,6 +35,7 @@ class _ColorfulFormatter(logging.Formatter):
         return prefix + " " + log
 
 
+@functools.lru_cache()
 def get_logger(
     save_dir: Optional[str],
     distributed_rank: Optional[int] = None,
