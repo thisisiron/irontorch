@@ -14,7 +14,7 @@ from torch.distributed.launcher.api import LaunchConfig
 from typing import Union, Any, Optional
 from pydantic import BaseModel
 
-from irontorch.distributed.schema import Config
+from irontorch.distributed.schema import MainConfig
 
 
 def parse_min_max_nodes(n_node):
@@ -173,7 +173,7 @@ def parse_and_load_config(config_path, parser=None):
     args = parser.parse_args()
 
     conf = load_config(config_path)
-    conf = map_config(conf, Config)
+    conf = map_config(conf, MainConfig)
 
     launch_config = elastic_config(args)
     conf.launch_config = launch_config
