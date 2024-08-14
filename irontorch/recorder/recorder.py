@@ -46,6 +46,7 @@ def get_logger(
 ) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
+    logger.propagate = False
 
     if abbrev_name is None:
         abbrev_name = name
@@ -106,17 +107,18 @@ class Logger:
         self.logger = get_logger(save_dir, name=name, distributed_rank=rank, mode=mode)
 
     def log(self, step: int, **kwargs: Union[str, float, int]) -> None:
-        panels = [f'step: {step}']
+        if dist.is_primary():
+            panels = [f'step: {step}']
 
-        for k, v in kwargs.items():
-            if isinstance(v, float):
-                decimal = get_decimal(v) + 2
-                v = round(v, decimal)
-                panels.append(f'{k}: {v}')
+            for k, v in kwargs.items():
+                if isinstance(v, float):
+                    decimal = get_decimal(v) + 2
+                    v = round(v, decimal)
+                    panels.append(f'{k}: {v}')
 
-            else:
-                panels.append(f'{k}: {v}')
-        self.logger.info(' | '.join(panels))
+                else:
+                    panels.append(f'{k}: {v}')
+            self.logger.info(' | '.join(panels))
 
 
 class WandB:
