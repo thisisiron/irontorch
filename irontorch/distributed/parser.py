@@ -172,10 +172,11 @@ def parse_and_load_config(config_path, parser=None):
     parser = add_elastic_args(parser)
     args = parser.parse_args()
 
-    conf = load_config(config_path)
+    conf = load_config(args.config_path)
     conf = map_config(conf, MainConfig)
 
     launch_config = elastic_config(args)
+    conf.config_path = args.config_path
     conf.launch_config = launch_config
     conf.n_gpu = launch_config.nproc_per_node
 
