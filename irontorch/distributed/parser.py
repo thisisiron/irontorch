@@ -166,7 +166,7 @@ def map_config(config: DictConfig, config_class: BaseModel):
     return config_class(**config)
 
 
-def parse_and_load_config(config_path, parser=None):
+def parse_and_load_config(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser()
     parser = add_elastic_args(parser)
