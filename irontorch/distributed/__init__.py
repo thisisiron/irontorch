@@ -12,6 +12,6 @@ from irontorch.distributed.distributed import (
     create_local_process_group
 )
 
-from irontorch.distributed.parser import parse_and_load_config
+from irontorch.distributed.parser import setup_config 
 
 from irontorch.distributed.launch import run

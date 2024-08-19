@@ -42,11 +42,13 @@ def get_logger(
     filename: str = 'log.txt',
     mode: str = 'rich',
     name: str = 'main',
-    abbrev_name: Optional[str] = None
+    abbrev_name: Optional[str] = None,
+    enable_propagation: bool = False
 ) -> logging.Logger:
+
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
-    logger.propagate = False
+    logger.propagate = enable_propagation 
 
     if abbrev_name is None:
         abbrev_name = name
@@ -107,18 +109,19 @@ class Logger:
         self.logger = get_logger(save_dir, name=name, distributed_rank=rank, mode=mode)
 
     def log(self, step: int, **kwargs: Union[str, float, int]) -> None:
-        if dist.is_primary():
-            panels = [f'step: {step}']
+        panels = [f'step: {step}']
 
-            for k, v in kwargs.items():
-                if isinstance(v, float):
-                    decimal = get_decimal(v) + 2
-                    v = round(v, decimal)
-                    panels.append(f'{k}: {v}')
+        for k, v in kwargs.items():
+            if isinstance(v, float):
+                decimal = get_decimal(v) + 2
+                v = round(v, decimal)
+                panels.append(f'{k}: {v}')
+            else:
+                panels.append(f'{k}: {v}')
+        self.logger.info(' | '.join(panels))
 
-                else:
-                    panels.append(f'{k}: {v}')
-            self.logger.info(' | '.join(panels))
+    def info(self, message: str) -> None:
+        self.logger.info(message)
 
 
 class WandB:
