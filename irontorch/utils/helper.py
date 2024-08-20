@@ -1,5 +1,6 @@
 import os
 import random
+import warnings
 
 import torch
 import numpy as np
@@ -31,7 +32,8 @@ def set_seed(seed:str = 42, deterministic: bool = False) -> None:
             torch.use_deterministic_algorithms(True, warn_only=True)  # warn if deterministic is not possible
             torch.backends.cudnn.deterministic = True
         else:
-            pass  # TODO: add warning 
+            warnings.warn("Torch version is below 2.0.0. Deterministic algorithms may not be fully supported.", RuntimeWarning)
+
 
     else:
         torch.backends.cudnn.benchmark = True 
