@@ -7,7 +7,7 @@ class GradScaler:
     state_dict_key = "amp_scaler"
 
     def __init__(self, mixed_precision=False):
-        self.grad_scaler = torch.cuda.amp.GradScaler(enabled=mixed_precision)
+        self.grad_scaler = torch.amp.GradScaler("cuda", enabled=mixed_precision)
 
     def __call__(
             self,

@@ -84,9 +84,9 @@ def elastic_config(args):
         max_restarts=args.max_restarts,
         monitor_interval=args.monitor_interval,
         start_method=args.start_method,
-        redirects=Std.from_str(args.redirects),
-        tee=Std.from_str(args.tee),
-        log_dir=args.log_dir,
+        # redirects=Std.from_str(args.redirects),
+        # tee=Std.from_str(args.tee),
+        # log_dir=args.log_dir,
     )
 
     return config
@@ -135,9 +135,9 @@ def add_elastic_args(parser):
         choices=["spawn", "fork", "forkserver"],
     )
     parser.add_argument("--role", type=str, default="default")
-    parser.add_argument("--log_dir", type=str, default=None)
-    parser.add_argument("-r", "--redirects", type=str, default="0")
-    parser.add_argument("-t", "--tee", type=str, default="0")
+    # parser.add_argument("--log_dir", type=str, default=None)
+    # parser.add_argument("-r", "--redirects", type=str, default="0")
+    # parser.add_argument("-t", "--tee", type=str, default="0")
 
     return parser
 
