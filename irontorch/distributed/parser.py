@@ -166,17 +166,24 @@ def map_config(config: DictConfig, config_class: BaseModel):
     return config_class(**config)
 
 
-def setup_config(parser=None):
+def setup_config(parser=None, args=None):
     if parser is None:
         parser = argparse.ArgumentParser()
     parser = add_elastic_args(parser)
-    args = parser.parse_args()
 
-    conf = load_config(args.config_path)
-    conf = map_config(conf, MainConfig)
+    if args is None:
+        args = []
+    args = parser.parse_args(args)
+
+    if hasattr(args, "config_path"):
+        conf = load_config(args.config_path)
+        conf = map_config(conf, MainConfig)
+        conf.config_path = args.config_path
+    else:
+        conf = MainConfig()
+        conf.config_path = None
 
     launch_config = elastic_config(args)
-    conf.config_path = args.config_path
     conf.launch_config = launch_config
     conf.n_gpu = launch_config.nproc_per_node
 

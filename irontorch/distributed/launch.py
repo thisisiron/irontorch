@@ -16,22 +16,23 @@ def set_omp_threads():
 
 def run(
     fn: Callable,
-    num_gpus_per_node: int,
-    num_nodes: int = 1,
-    conf: Tuple=()
+    conf,
+    args: Tuple=()
 ) -> None:
 
+    num_gpus_per_node = conf.n_gpu
+    num_nodes = 1
     world_size = num_nodes * num_gpus_per_node
 
     if world_size > 1:
         set_omp_threads()
 
-        elastic_launch(config=conf.launch_config, entrypoint=elastic_worker)(fn, conf, num_gpus_per_node)
+        elastic_launch(config=conf.launch_config, entrypoint=elastic_worker)(fn, args, num_gpus_per_node)
     else:
-        fn(conf)
+        fn(*args)
 
 
-def elastic_worker(fn: Callable, conf: Tuple, num_gpus_per_node: int):
+def elastic_worker(fn: Callable, args: Tuple, num_gpus_per_node: int):
     if not torch.cuda.is_available():
         raise OSError("CUDA is not available. Please check your environments")
 
@@ -53,5 +54,5 @@ def elastic_worker(fn: Callable, conf: Tuple, num_gpus_per_node: int):
 
     dist.create_local_process_group(num_gpus_per_node)
 
-    fn(conf)
+    fn(*args)
 
