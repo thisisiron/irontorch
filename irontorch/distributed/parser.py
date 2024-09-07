@@ -166,12 +166,15 @@ def map_config(config: DictConfig, config_class: BaseModel):
     return config_class(**config)
 
 
-def setup_config(parser=None):
+def setup_config(parser=None, args=None):
     if parser is None:
         parser = argparse.ArgumentParser()
     parser = add_elastic_args(parser)
 
-    args = parser.parse_args()
+    if args is not None:
+        args = parser.parse_args(args)
+    else:
+        args = parser.parse_args()
 
     if hasattr(args, "config_path"):
         conf = load_config(args.config_path)
