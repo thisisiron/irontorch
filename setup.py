@@ -13,6 +13,8 @@ setup(
         "pydantic>=1.8",
         "omegaconf",
         "rich",
+        "flake8",
+        "black",
     ],
     packages=find_packages(),
 )
