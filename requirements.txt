@@ -1,0 +1,17 @@
+# Core dependencies from setup.py
+# torch>=1.1 # Commented out due to memory constraints in sandbox
+pydantic>=1.8
+omegaconf
+rich
+
+# Logging configuration dependency
+PyYAML
+
+# Optional dependency (used in recorder)
+wandb
+
+# Development/Testing dependencies (from setup.py & installed)
+flake8
+black
+# unittest is a standard library module
+
