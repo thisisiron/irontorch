@@ -10,13 +10,13 @@ class GradScaler:
         self.grad_scaler = torch.amp.GradScaler("cuda", enabled=mixed_precision)
 
     def __call__(
-            self,
-            loss,
-            optimizer,
-            parameters=None,
-            clip_grad=None,
-            clip_mode='norm',
-            need_update=True,
+        self,
+        loss,
+        optimizer,
+        parameters=None,
+        clip_grad=None,
+        clip_mode="norm",
+        need_update=True,
     ):
         optimizer.zero_grad()
         self.grad_scaler.scale(loss).backward()

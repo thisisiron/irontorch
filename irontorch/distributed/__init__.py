@@ -9,9 +9,9 @@ from irontorch.distributed.distributed import (
     is_parallel,
     upwrap_parallel,
     get_data_sampler,
-    create_local_process_group
+    create_local_process_group,
 )
 
-from irontorch.distributed.parser import setup_config 
+from irontorch.distributed.parser import setup_config
 
 from irontorch.distributed.launch import run

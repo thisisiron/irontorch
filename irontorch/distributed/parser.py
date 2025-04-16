@@ -97,11 +97,7 @@ def add_elastic_args(parser):
     parser.add_argument("--n_node", type=str, default="1:1")
     parser.add_argument("--node_rank", type=int, default=0)
 
-    port = (
-        2 ** 15
-        + 2 ** 14
-        + hash(os.getuid() if sys.platform != "win32" else 1) % 2 ** 14
-    )
+    port = 2**15 + 2**14 + hash(os.getuid() if sys.platform != "win32" else 1) % 2**14
     parser.add_argument("--dist_url", default=f"127.0.0.1:{port}")
 
     parser.add_argument("--rdzv_backend", type=str, default="static")
@@ -148,12 +144,12 @@ def load_config(file_path: str) -> Union[DictConfig, None]:
 
     file_extension = os.path.splitext(file_path)[1].lower()
 
-    if file_extension == '.json':
-        with open(file_path, 'r') as f:
+    if file_extension == ".json":
+        with open(file_path, "r") as f:
             data = json.load(f)
         config = OmegaConf.create(data)
-    elif file_extension in ['.yaml', '.yml']:
-        with open(file_path, 'r') as f:
+    elif file_extension in [".yaml", ".yml"]:
+        with open(file_path, "r") as f:
             data = yaml.safe_load(f)
         config = OmegaConf.create(data)
     else:
@@ -188,4 +184,4 @@ def setup_config(parser=None, args=None):
     conf.launch_config = launch_config
     conf.n_gpu = launch_config.nproc_per_node
 
-    return conf 
+    return conf

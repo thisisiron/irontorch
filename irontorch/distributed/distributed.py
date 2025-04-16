@@ -55,7 +55,9 @@ def create_local_process_group(num_workers_per_machine: int) -> None:
     num_machines = get_world_size() // num_workers_per_machine
     machine_rank = get_rank() // num_workers_per_machine
     for i in range(num_machines):
-        ranks_on_i = list(range(i * num_workers_per_machine, (i + 1) * num_workers_per_machine))
+        ranks_on_i = list(
+            range(i * num_workers_per_machine, (i + 1) * num_workers_per_machine)
+        )
         pg = dist.new_group(ranks_on_i)
         if i == machine_rank:
             _LOCAL_PROCESS_GROUP = pg
@@ -97,7 +99,9 @@ def synchronize() -> None:
     dist.barrier()
 
 
-def reduce_dict(input_dict: Dict[str, torch.Tensor], average: bool = True) -> Dict[str, torch.Tensor]:
+def reduce_dict(
+    input_dict: Dict[str, torch.Tensor], average: bool = True
+) -> Dict[str, torch.Tensor]:
     world_size = get_world_size()
     if world_size < 2:
         return input_dict
@@ -119,19 +123,19 @@ def reduce_dict(input_dict: Dict[str, torch.Tensor], average: bool = True) -> Di
 
 
 def is_parallel(model: nn.Module) -> bool:
-   """Determines whether the model is a parallel model (DP or DDP)."""
-   return isinstance(model, (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel))
+    """Determines whether the model is a parallel model (DP or DDP)."""
+    return isinstance(
+        model, (nn.parallel.DataParallel, nn.parallel.DistributedDataParallel)
+    )
 
 
 def upwrap_parallel(model: nn.Module) -> bool:
-   """Converts a parallel model (DP or DDP) to a non-parallel model."""
-   return model.module if is_parallel(model) else model
+    """Converts a parallel model (DP or DDP) to a non-parallel model."""
+    return model.module if is_parallel(model) else model
 
 
 def get_data_sampler(
-    dataset: data.Dataset, 
-    shuffle: bool, 
-    distributed: bool
+    dataset: data.Dataset, shuffle: bool, distributed: bool
 ) -> Union[data.sampler.Sampler, data.distributed.DistributedSampler]:
 
     if distributed:

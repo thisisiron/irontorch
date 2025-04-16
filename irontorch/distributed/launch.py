@@ -14,11 +14,7 @@ def set_omp_threads():
         os.environ["OMP_NUM_THREADS"] = "1"
 
 
-def run(
-    fn: Callable,
-    conf,
-    args: Tuple=()
-) -> None:
+def run(fn: Callable, conf, args: Tuple = ()) -> None:
 
     num_gpus_per_node = conf.n_gpu
     num_nodes = 1
@@ -27,7 +23,9 @@ def run(
     if world_size > 1:
         set_omp_threads()
 
-        elastic_launch(config=conf.launch_config, entrypoint=elastic_worker)(fn, args, num_gpus_per_node)
+        elastic_launch(config=conf.launch_config, entrypoint=elastic_worker)(
+            fn, args, num_gpus_per_node
+        )
     else:
         fn(*args)
 
@@ -55,4 +53,3 @@ def elastic_worker(fn: Callable, args: Tuple, num_gpus_per_node: int):
     dist.create_local_process_group(num_gpus_per_node)
 
     fn(*args)
-
