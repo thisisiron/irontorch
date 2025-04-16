@@ -3,6 +3,7 @@ import os
 import json
 import yaml
 import argparse
+import torch # Added torch import
 from omegaconf import OmegaConf, DictConfig
 from pydantic import BaseModel
 from irontorch.distributed.parser import (
@@ -13,9 +14,9 @@ from irontorch.distributed.parser import (
     add_elastic_args,
     load_config,
     map_config,
-    setup_config
+    setup_config,
 )
-from irontorch.distributed.schema import MainConfig
+# Removed unused import: from irontorch.distributed.schema import MainConfig
 
 
 class TestParserFunctions(unittest.TestCase):
@@ -36,7 +37,9 @@ class TestParserFunctions(unittest.TestCase):
                 local_world_size("gpu")
 
     def test_get_rdzv_endpoint(self):
-        args = argparse.Namespace(rdzv_backend="static", rdzv_endpoint="", dist_url="127.0.0.1:29500")
+        args = argparse.Namespace(
+            rdzv_backend="static", rdzv_endpoint="", dist_url="127.0.0.1:29500"
+        )
         self.assertEqual(get_rdzv_endpoint(args, 1), "127.0.0.1:29500")
         args.rdzv_endpoint = "127.0.0.1:29501"
         self.assertEqual(get_rdzv_endpoint(args, 1), "127.0.0.1:29501")
@@ -53,7 +56,7 @@ class TestParserFunctions(unittest.TestCase):
             max_restarts=0,
             monitor_interval=5,
             start_method="spawn",
-            role="default"
+            role="default",
         )
         config = elastic_config(args)
         self.assertEqual(config.min_nodes, 1)
@@ -64,7 +67,9 @@ class TestParserFunctions(unittest.TestCase):
     def test_add_elastic_args(self):
         parser = argparse.ArgumentParser()
         parser = add_elastic_args(parser)
-        args = parser.parse_args(["--n_proc", "2", "--n_node", "1:2", "--node_rank", "0"])
+        args = parser.parse_args(
+            ["--n_proc", "2", "--n_node", "1:2", "--node_rank", "0"]
+        )
         self.assertEqual(args.n_proc, "2")
         self.assertEqual(args.n_node, "1:2")
         self.assertEqual(args.node_rank, 0)
@@ -103,5 +108,5 @@ class TestParserFunctions(unittest.TestCase):
         os.remove("test_config.yaml")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

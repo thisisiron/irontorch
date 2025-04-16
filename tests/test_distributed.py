@@ -14,7 +14,7 @@ from irontorch.distributed import (
     is_parallel,
     upwrap_parallel,
     get_data_sampler,
-    create_local_process_group
+    create_local_process_group,
 )
 
 
@@ -22,7 +22,9 @@ class TestDistributedFunctions(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        dist.init_process_group(backend='gloo', init_method='tcp://127.0.0.1:23456', rank=0, world_size=1)
+        dist.init_process_group(
+            backend="gloo", init_method="tcp://127.0.0.1:23456", rank=0, world_size=1
+        )
         create_local_process_group(1)
 
     @classmethod
@@ -49,10 +51,10 @@ class TestDistributedFunctions(unittest.TestCase):
         self.assertIsNotNone(get_local_process_group())
 
     def test_reduce_dict(self):
-        input_dict = {'a': torch.tensor(1.0), 'b': torch.tensor(2.0)}
+        input_dict = {"a": torch.tensor(1.0), "b": torch.tensor(2.0)}
         reduced_dict = reduce_dict(input_dict)
-        self.assertEqual(reduced_dict['a'], torch.tensor(1.0))
-        self.assertEqual(reduced_dict['b'], torch.tensor(2.0))
+        self.assertEqual(reduced_dict["a"], torch.tensor(1.0))
+        self.assertEqual(reduced_dict["b"], torch.tensor(2.0))
 
     def test_is_parallel(self):
         model = nn.Linear(2, 2)
@@ -73,5 +75,5 @@ class TestDistributedFunctions(unittest.TestCase):
         self.assertIsInstance(dist_sampler, data.distributed.DistributedSampler)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

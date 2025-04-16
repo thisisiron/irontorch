@@ -2,8 +2,9 @@ import unittest
 import torch
 import numpy as np
 import random
-import os
+# Removed unused import: import os
 from irontorch.utils.helper import set_seed, check_library_version
+
 
 class TestHelperFunctions(unittest.TestCase):
 
@@ -36,5 +37,6 @@ class TestHelperFunctions(unittest.TestCase):
         self.assertTrue(check_library_version("1.8.0", "1.8.0", must_be_same=True))
         self.assertFalse(check_library_version("1.8.0", "1.7.0", must_be_same=True))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

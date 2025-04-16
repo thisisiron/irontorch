@@ -17,13 +17,15 @@ class TestGradScaler(unittest.TestCase):
         outputs = self.model(inputs)
         loss = self.criterion(outputs, targets)
 
-        self.scaler(loss, self.optimizer, parameters=self.model.parameters(), clip_grad=1.0)
-        self.assertTrue(self.optimizer.param_groups[0]['params'][0].grad is not None)
+        self.scaler(
+            loss, self.optimizer, parameters=self.model.parameters(), clip_grad=1.0
+        )
+        self.assertTrue(self.optimizer.param_groups[0]["params"][0].grad is not None)
 
     def test_grad_scaler_state_dict(self):
         state_dict = self.scaler.state_dict()
-        self.assertIn('scale', state_dict)
-        self.assertIn('growth_tracker', state_dict)
+        self.assertIn("scale", state_dict)
+        self.assertIn("growth_tracker", state_dict)
 
     def test_grad_scaler_load_state_dict(self):
         state_dict = self.scaler.state_dict()
@@ -32,5 +34,5 @@ class TestGradScaler(unittest.TestCase):
         self.assertEqual(self.scaler.state_dict(), new_scaler.state_dict())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

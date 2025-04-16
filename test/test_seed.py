@@ -45,5 +45,5 @@ class TestSetSeed(unittest.TestCase):
         self.assertNotEqual(torch_val, torch.rand(1).item())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
