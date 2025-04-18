@@ -9,6 +9,7 @@ rotating file logging (in JSON format).
 import logging
 import logging.config
 import os
+import sys
 import yaml
 from pathlib import Path
 from typing import Optional, Union, Dict, Any
@@ -84,7 +85,7 @@ def setup_logging(
 # --- WandB Integration --- #
 
 
-class WandBLogger:
+class WandbLogger:
     """A wrapper for Weights & Biases logging, active only on the primary process."""
 
     def __init__(
