@@ -106,3 +106,41 @@ To run the tests for the IronTorch library, follow these steps:
    ```
 
 The tests will be executed, and you will see the test results in the terminal.
+
+
+
+### Using the Logging System
+
+The improved logging system is configured via `logging_config.yaml`. You can initialize it in your main script and get logger instances:
+
+```python
+import logging
+from irontorch.recorder import setup_logging
+
+# Setup logging (ideally at the start of your application)
+# You can optionally provide a path to a custom config file
+# or override the log file path.
+setup_logging(log_file_path="my_experiment.log")
+
+# Get a logger instance for your module
+logger = logging.getLogger("my_module")
+
+# Log messages
+logger.debug("This is a debug message (will go to file by default).")
+logger.info("Starting the training process...")
+logger.warning("Learning rate seems high.")
+
+try:
+    # Simulate an error
+    result = 1 / 0
+except ZeroDivisionError:
+    logger.exception("An error occurred during calculation!") # Logs exception with traceback
+
+logger.info("Training finished.")
+```
+
+This setup provides:
+*   Console logging using `rich` for better readability (default level INFO).
+*   File logging in JSON format to `irontorch.log` (or the path specified in `setup_logging`) with rotation (default level DEBUG).
+*   Configuration via `logging_config.yaml` for easy customization.
+
