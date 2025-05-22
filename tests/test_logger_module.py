@@ -7,7 +7,7 @@ import yaml
 from pathlib import Path
 from unittest.mock import patch, MagicMock, mock_open
 
-from irontorch.recorder.recorder import setup_logging, WandbLogger, wandb # Import wandb for skipif
+from irontorch.logger.logger import setup_logging, WandbLogger, wandb # Import wandb for skipif
 
 
 # Patch sys.stderr to avoid errors
@@ -167,8 +167,8 @@ def test_wandb_logger_finish(mock_is_primary):
 
 
 @pytest.mark.skipif(wandb is None, reason="wandb module not installed")
-@patch('irontorch.recorder.recorder.dist.is_primary', return_value=True)
-@patch('irontorch.recorder.recorder.wandb')
+@patch('irontorch.logger.logger.dist.is_primary', return_value=True)
+@patch('irontorch.logger.logger.wandb')
 @patch('logging.getLogger') # Patch the logger used by WandbLogger
 def test_wandb_logger_finish_exception_handling(mock_get_logger, mock_wandb_module, mock_is_primary_func):
     """Test that WandbLogger.finish catches and logs exceptions from wandb_instance.finish()."""

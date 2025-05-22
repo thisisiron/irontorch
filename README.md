@@ -115,7 +115,7 @@ The improved logging system is configured via `logging_config.yaml`. You can ini
 
 ```python
 import logging
-from irontorch.recorder import setup_logging
+from irontorch.logger import setup_logging
 
 # Setup logging (ideally at the start of your application)
 # You can optionally provide a path to a custom config file
@@ -162,10 +162,10 @@ When `deterministic=True` is passed, and if you are using PyTorch version 2.0.0 
 
 #### Integrating with Weights & Biases using `WandbLogger`
 
-IronTorch also includes `WandbLogger` for easy integration with Weights & Biases, available in `irontorch.recorder.recorder`.
+IronTorch also includes `WandbLogger` for easy integration with Weights & Biases, available in `irontorch.logger.logger`.
 
 ```python
-from irontorch.recorder import WandbLogger
+from irontorch.logger import WandbLogger
 # from irontorch import distributed as dist # Assuming you use irontorch.distributed
 
 # Example initialization (typically only on the primary process)
