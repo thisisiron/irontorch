@@ -11,10 +11,12 @@ _LOCAL_PROCESS_GROUP = None
 
 
 def is_primary() -> bool:
+    """Checks if the current process is the primary process (rank 0)."""
     return get_rank() == 0
 
 
 def get_rank() -> int:
+    """Gets the rank of the current process."""
     if not dist.is_available():
         return 0
     if not dist.is_initialized():
@@ -23,6 +25,7 @@ def get_rank() -> int:
 
 
 def get_local_rank() -> int:
+    """Gets the local rank of the current process within its machine."""
     if not dist.is_available():
         return 0
     if not dist.is_initialized():
@@ -63,7 +66,7 @@ def create_local_process_group(num_workers_per_machine: int) -> None:
             _LOCAL_PROCESS_GROUP = pg
 
 
-def get_local_process_group():
+    def get_local_process_group() -> dist.ProcessGroup:
     """
     Returns:
         A torch process group which only includes processes that are on the same
@@ -75,6 +78,7 @@ def get_local_process_group():
 
 
 def get_world_size() -> int:
+    """Gets the total number of processes in the distributed group (world size)."""
     if not dist.is_available():
         return 1
 
@@ -85,6 +89,7 @@ def get_world_size() -> int:
 
 
 def synchronize() -> None:
+    """Synchronizes all processes. Blocks until all processes reach this point."""
     if not dist.is_available():
         return
 
@@ -102,6 +107,17 @@ def synchronize() -> None:
 def reduce_dict(
     input_dict: Dict[str, torch.Tensor], average: bool = True
 ) -> Dict[str, torch.Tensor]:
+    """
+    Reduces the values in the dictionary from all processes so that all processes
+    have the averaged results.
+
+    Args:
+        input_dict (Dict[str, torch.Tensor]): Dictionary to reduce.
+        average (bool): Whether to average the reduced values.
+
+    Returns:
+        Dict[str, torch.Tensor]: The dictionary with reduced values.
+    """
     world_size = get_world_size()
     if world_size < 2:
         return input_dict
@@ -129,15 +145,25 @@ def is_parallel(model: nn.Module) -> bool:
     )
 
 
-def upwrap_parallel(model: nn.Module) -> bool:
+def upwrap_parallel(model: nn.Module) -> nn.Module:
     """Converts a parallel model (DP or DDP) to a non-parallel model."""
     return model.module if is_parallel(model) else model
 
 
 def get_data_sampler(
     dataset: data.Dataset, shuffle: bool, distributed: bool
-) -> Union[data.sampler.Sampler, data.distributed.DistributedSampler]:
+) -> Union[data.Sampler, data.DistributedSampler]:
+    """
+    Gets a data sampler for the given dataset.
 
+    Args:
+        dataset (data.Dataset): The dataset to sample from.
+        shuffle (bool): Whether to shuffle the data.
+        distributed (bool): Whether to use a distributed sampler.
+
+    Returns:
+        Union[data.Sampler, data.DistributedSampler]: The data sampler.
+    """
     if distributed:
         return data.distributed.DistributedSampler(dataset, shuffle=shuffle)
 

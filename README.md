@@ -144,3 +144,38 @@ This setup provides:
 *   File logging in JSON format to `irontorch.log` (or the path specified in `setup_logging`) with rotation (default level DEBUG).
 *   Configuration via `logging_config.yaml` for easy customization.
 
+#### Ensuring Reproducibility with `set_seed`
+
+The `irontorch.utils.helper.set_seed(seed: int, deterministic: bool = False)` function is available to help ensure reproducibility in your experiments.
+
+```python
+from irontorch.utils.helper import set_seed
+
+# Set a global seed for random, numpy, and torch
+set_seed(42)
+
+# For stricter determinism with PyTorch >= 2.0.0
+set_seed(42, deterministic=True)
+```
+
+When `deterministic=True` is passed, and if you are using PyTorch version 2.0.0 or newer, `set_seed` will also configure `torch.use_deterministic_algorithms(True)`. This setting is stricter than the default and will cause PyTorch to raise an error if a non-deterministic CUDA algorithm is encountered, rather than just issuing a warning. This helps ensure that your operations are fully deterministic when required. For older PyTorch versions, or when `deterministic=False`, it still sets seeds for `random`, `numpy`, and `torch`, but PyTorch's behavior regarding deterministic algorithms will depend on its version and default settings.
+
+#### Integrating with Weights & Biases using `WandbLogger`
+
+IronTorch also includes `WandbLogger` for easy integration with Weights & Biases, available in `irontorch.recorder.recorder`.
+
+```python
+from irontorch.recorder import WandbLogger
+# from irontorch import distributed as dist # Assuming you use irontorch.distributed
+
+# Example initialization (typically only on the primary process)
+# if dist.is_primary():
+#     wandb_logger = WandbLogger(project="my_awesome_project", name="experiment_run_1", config={"learning_rate": 0.01})
+#     # Log metrics during your training loop
+#     # wandb_logger.log({"loss": 0.5, "accuracy": 0.9}, step=100)
+#     # ...
+#     # wandb_logger.finish() # finish is called automatically by __del__ or can be called explicitly
+```
+
+The `WandbLogger` facilitates the initialization of a WandB run and logging of metrics and configurations to your WandB dashboard. A key feature is its robust `finish` method: it incorporates enhanced error handling to gracefully manage and log any potential exceptions that might occur during the finalization of the WandB run. This prevents issues like unsynchronized data or abrupt crashes at the end of training due to WandB communication problems, providing clearer feedback on such occurrences.
+

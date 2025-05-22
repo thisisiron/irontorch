@@ -7,7 +7,7 @@ import yaml
 from pathlib import Path
 from unittest.mock import patch, MagicMock, mock_open
 
-from irontorch.recorder.recorder import setup_logging, WandbLogger
+from irontorch.recorder.recorder import setup_logging, WandbLogger, wandb # Import wandb for skipif
 
 
 # Patch sys.stderr to avoid errors
@@ -163,4 +163,41 @@ def test_wandb_logger_log(mock_is_primary):
 def test_wandb_logger_finish(mock_is_primary):
     """Test WandbLogger.finish method."""
     # This test is skipped
-    pass 
+    pass
+
+
+@pytest.mark.skipif(wandb is None, reason="wandb module not installed")
+@patch('irontorch.recorder.recorder.dist.is_primary', return_value=True)
+@patch('irontorch.recorder.recorder.wandb')
+@patch('logging.getLogger') # Patch the logger used by WandbLogger
+def test_wandb_logger_finish_exception_handling(mock_get_logger, mock_wandb_module, mock_is_primary_func):
+    """Test that WandbLogger.finish catches and logs exceptions from wandb_instance.finish()."""
+    # Configure the mock for logging.getLogger
+    mock_logger_instance = MagicMock()
+    mock_get_logger.return_value = mock_logger_instance
+
+    # Configure the mock for wandb.init() to return a mock run instance
+    mock_wandb_run_instance = MagicMock()
+    mock_wandb_module.init.return_value = mock_wandb_run_instance
+
+    # Configure the mock_wandb_run_instance.finish to raise an exception
+    test_exception = RuntimeError("Simulated wandb.finish() error")
+    mock_wandb_run_instance.finish.side_effect = test_exception
+
+    # Instantiate WandbLogger
+    # project name is required for wandb.init to be called
+    wandb_logger = WandbLogger(project="test_project_exception")
+
+    # Call the finish method
+    wandb_logger.finish()
+
+    # Assert that logger.exception was called due to the raised error
+    # The logger in WandbLogger is obtained by logging.getLogger(__name__)
+    # So, mock_logger_instance should be the one used.
+    mock_logger_instance.exception.assert_called_once()
+    
+    # Optionally, check the message passed to logger.exception
+    # The first argument to exception is the message string.
+    args, _ = mock_logger_instance.exception.call_args
+    assert "Error finishing Wandb run" in args[0]
+    assert str(test_exception) in args[0] # Check if the original exception message is part of the log

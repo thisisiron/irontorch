@@ -10,13 +10,26 @@ import pkg_resources
 def check_library_version(
     cur_version: str, min_version: str, must_be_same: bool = False
 ) -> bool:
+    """
+    Checks if the current version of a library meets a minimum version requirement.
+
+    Args:
+        cur_version (str): The current version of the library.
+        min_version (str): The minimum required version of the library.
+        must_be_same (bool, optional): If True, checks if the current version
+                                       is exactly the same as the minimum version.
+                                       Defaults to False.
+
+    Returns:
+        bool: True if the version check passes, False otherwise.
+    """
     current, minimum = (
         pkg_resources.parse_version(x) for x in (cur_version, min_version)
     )
     return (current == minimum) if must_be_same else (current >= minimum)  # bool
 
 
-def set_seed(seed: str = 42, deterministic: bool = False) -> None:
+def set_seed(seed: int = 42, deterministic: bool = False) -> None:
     """
     Set the random seed for reproducibility.
     """
@@ -34,7 +47,7 @@ def set_seed(seed: str = 42, deterministic: bool = False) -> None:
 
         if torch_2_0:
             torch.use_deterministic_algorithms(
-                True, warn_only=True
+                True
             )  # warn if deterministic is not possible
             torch.backends.cudnn.deterministic = True
         else:
