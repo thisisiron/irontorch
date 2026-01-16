@@ -7,7 +7,8 @@ import yaml
 from pathlib import Path
 from unittest.mock import patch, MagicMock, mock_open
 
-from irontorch.recorder.recorder import setup_logging, WandbLogger
+from irontorch.recorder.logging import setup_logging
+from irontorch.recorder.trackers import WandbLogger
 
 
 # Patch sys.stderr to avoid errors
