@@ -4,15 +4,15 @@
 
 --------------------------------------------------------------------------------
 
-PyTorch 분산 학습 및 학습 유틸리티 라이브러리
+PyTorch distributed training and training utilities library
 
-## 설치
+## Installation
 
 ```bash
 pip install irontorch
 ```
 
-## 빠른 시작
+## Quick Start
 
 ```python
 import argparse
@@ -22,7 +22,7 @@ from irontorch.utils import set_seed, GradScaler
 def main(conf):
     set_seed(42, deterministic=True)
 
-    # 학습 코드 작성
+    # training code
     ...
 
 parser = argparse.ArgumentParser()
@@ -33,16 +33,16 @@ conf.distributed = conf.n_gpu > 1
 dist.run(main, conf.launch_config.nproc_per_node, conf=conf)
 ```
 
-## 모듈
+## Modules
 
-### 1. 분산 학습 (Distributed Training)
+### 1. Distributed Training
 
-#### 분산 환경 설정
+#### Configuration
 
 ```python
 from irontorch import distributed as dist
 
-# 설정 파싱 및 분산 환경 구성
+# Config parsing and distributed setup
 parser = argparse.ArgumentParser()
 parser.add_argument("--config_path", type=str)
 parser.add_argument("--batch_size", type=int, default=64)
@@ -50,29 +50,29 @@ parser.add_argument("--batch_size", type=int, default=64)
 conf = dist.setup_config(parser)
 conf.distributed = conf.n_gpu > 1
 
-# 분산 학습 실행
+# Run distributed training
 dist.run(main, conf.launch_config.nproc_per_node, conf=conf)
 ```
 
-#### 분산 유틸리티 함수
+#### Utility Functions
 
 ```python
 from irontorch import distributed as dist
 
-# 현재 프로세스 정보
-rank = dist.get_rank()              # 전체 rank
-local_rank = dist.get_local_rank()  # 노드 내 rank
-world_size = dist.get_world_size()  # 전체 프로세스 수
+# Current process info
+rank = dist.get_rank()              # global rank
+local_rank = dist.get_local_rank()  # rank within node
+world_size = dist.get_world_size()  # total processes
 
-# 메인 프로세스 확인
+# Check primary process
 if dist.is_primary():
-    print("메인 프로세스에서만 실행")
+    print("Running on primary process only")
 
-# 프로세스 동기화
+# Synchronize processes
 dist.synchronize()
 ```
 
-#### 데이터 샘플러
+#### Data Sampler
 
 ```python
 import torch
@@ -84,34 +84,34 @@ sampler = dist.get_data_sampler(trainset, shuffle=True, distributed=conf.distrib
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, sampler=sampler)
 ```
 
-#### 분산 연산
+#### Distributed Operations
 
 ```python
 from irontorch import distributed as dist
 
-# 딕셔너리 값 reduce (평균)
+# Reduce dict values (average)
 metrics = {"loss": 0.5, "accuracy": 0.9}
 reduced = dist.reduce_dict(metrics, average=True)
 
-# DataParallel 모델 언래핑
+# Unwrap DataParallel model
 model = dist.upwrap_parallel(model)
 
-# 병렬 모델 확인
+# Check parallel model
 if dist.is_parallel(model):
-    print("DataParallel 또는 DistributedDataParallel 모델")
+    print("DataParallel or DistributedDataParallel model")
 ```
 
-### 2. 학습 유틸리티 (Utils)
+### 2. Training Utils
 
-#### 시드 설정
+#### Seed Setting
 
 ```python
 from irontorch.utils import set_seed
 
-# 재현성을 위한 시드 설정
+# Set seed for reproducibility
 set_seed(42)
 
-# 완전한 결정론적 학습 (속도 저하 있음)
+# Full deterministic training (slower)
 set_seed(42, deterministic=True)
 ```
 
@@ -123,17 +123,17 @@ from irontorch.utils import GradScaler
 scaler = GradScaler(mixed_precision=True)
 
 for data, target in dataloader:
-    # backward + optimizer step + gradient clipping 통합
+    # backward + optimizer step + gradient clipping
     scaler(
         loss=loss,
         optimizer=optimizer,
         parameters=model.parameters(),
-        clip_grad=1.0,        # gradient clipping 값
+        clip_grad=1.0,        # gradient clipping value
         clip_mode="norm",     # "norm", "value", "agc"
         need_update=True
     )
 
-# 체크포인트 저장/로드
+# Checkpoint save/load
 state = scaler.state_dict()
 scaler.load_state_dict(state)
 ```
@@ -143,7 +143,7 @@ scaler.load_state_dict(state)
 ```python
 from irontorch.utils import dispatch_clip_grad
 
-# Gradient norm clipping (기본)
+# Gradient norm clipping (default)
 dispatch_clip_grad(model.parameters(), value=1.0, mode="norm")
 
 # Gradient value clipping
@@ -153,7 +153,7 @@ dispatch_clip_grad(model.parameters(), value=0.5, mode="value")
 dispatch_clip_grad(model.parameters(), value=0.01, mode="agc")
 ```
 
-### 3. 모델 유틸리티 (Models)
+### 3. Model Utils
 
 #### Model EMA (Exponential Moving Average)
 
@@ -169,19 +169,19 @@ for epoch in range(epochs):
         loss = model(batch)
         loss.backward()
         optimizer.step()
-        ema.update(model)  # EMA 가중치 업데이트
+        ema.update(model)  # Update EMA weights
 
-    # 검증: EMA 모델 사용
+    # Validation: use EMA model
     ema.module.eval()
     val_loss = validate(ema.module)
 
-# 최종 모델 저장 (EMA 가중치)
+# Save final model (EMA weights)
 torch.save(ema.module.state_dict(), "model_ema.pt")
 ```
 
-**체크포인트 저장/로드 (학습 재개용):**
+**Checkpoint save/load (for resuming):**
 ```python
-# 저장
+# Save
 checkpoint = {
     "model": model.state_dict(),
     "optimizer": optimizer.state_dict(),
@@ -189,7 +189,7 @@ checkpoint = {
 }
 torch.save(checkpoint, "checkpoint.pt")
 
-# 로드
+# Load
 checkpoint = torch.load("checkpoint.pt")
 model.load_state_dict(checkpoint["model"])
 ema.load_state_dict(checkpoint["ema"])
@@ -203,33 +203,33 @@ ema.load_state_dict(checkpoint["ema"])
 import logging
 from irontorch.recorder import setup_logging
 
-# 로깅 초기화
+# Initialize logging
 setup_logging(log_file_path="experiment.log")
 
-# 로거 사용
+# Use logger
 logger = logging.getLogger(__name__)
-logger.info("학습 시작")
-logger.warning("학습률이 높습니다")
+logger.info("Training started")
+logger.warning("Learning rate is high")
 ```
 
 #### Distributed Logger
 
-분산 학습 환경에서 로그 중복 출력을 방지합니다. Primary process(rank 0)에서만 로그를 출력하고, 필요시 `_all` 메서드로 모든 프로세스에서 출력할 수 있습니다.
+Prevents duplicate log output in distributed training. Only outputs logs on primary process (rank 0). Use `_all` methods to output on all processes when needed.
 
 ```python
 import logging
 from irontorch.recorder import make_distributed
 
-# 기존 logger를 분산 환경용으로 래핑
+# Wrap existing logger for distributed environment
 logger = make_distributed(logging.getLogger(__name__))
 
-# Primary process에서만 출력
-logger.info("학습 시작")
-logger.debug("배치 처리 중")
+# Output only on primary process
+logger.info("Training started")
+logger.debug("Processing batch")
 
-# 모든 rank에서 출력 (디버깅용)
-logger.info_all("각 GPU 메모리 상태")
-logger.error_all("이 rank에서 문제 발생")
+# Output on all ranks (for debugging)
+logger.info_all("GPU memory status")
+logger.error_all("Error on this rank")
 ```
 
 #### WandB Tracking
@@ -237,7 +237,7 @@ logger.error_all("이 rank에서 문제 발생")
 ```python
 from irontorch.recorder import WandbLogger
 
-# WandB 로거 초기화 (메인 프로세스에서만 활성화)
+# Initialize WandB logger (active only on primary process)
 wandb_logger = WandbLogger(
     project="my-project",
     name="experiment-1",
@@ -245,15 +245,15 @@ wandb_logger = WandbLogger(
     tags=["baseline", "v1"]
 )
 
-# 메트릭 로깅
+# Log metrics
 for epoch in range(epochs):
     wandb_logger.log({"loss": loss, "accuracy": acc}, step=epoch)
 
-# 학습 종료
+# Finish training
 wandb_logger.finish()
 ```
 
-## 전체 학습 예제
+## Full Training Example
 
 ```python
 import argparse
@@ -267,18 +267,18 @@ from irontorch.recorder import setup_logging, make_distributed, WandbLogger
 import logging
 
 def main(conf):
-    # 시드 및 로깅 설정
+    # Seed and logging setup
     set_seed(42, deterministic=True)
     setup_logging(log_file_path="train.log")
     logger = make_distributed(logging.getLogger(__name__))
 
-    # WandB 설정 (메인 프로세스만)
+    # WandB setup (primary process only)
     wandb_logger = WandbLogger(
         project="mnist",
         config=vars(conf)
     )
 
-    # 데이터 로드
+    # Load data
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
@@ -293,7 +293,7 @@ def main(conf):
         trainset, batch_size=conf.batch_size, sampler=sampler
     )
 
-    # 모델 및 옵티마이저
+    # Model and optimizer
     model = nn.Linear(784, 10).cuda()
     if conf.distributed:
         model = nn.parallel.DistributedDataParallel(model)
@@ -301,7 +301,7 @@ def main(conf):
     criterion = nn.CrossEntropyLoss()
     scaler = GradScaler(mixed_precision=True)
 
-    # 학습 루프
+    # Training loop
     for epoch in range(conf.epochs):
         for data, target in trainloader:
             data = data.view(-1, 784).cuda()
@@ -334,24 +334,24 @@ if __name__ == "__main__":
     dist.run(main, conf.launch_config.nproc_per_node, conf=conf)
 ```
 
-## 테스트 실행
+## Testing
 
 ```bash
-# 의존성 설치
+# Install dependencies
 pip install -r requirements.txt
 
-# 테스트 실행
+# Run tests
 pytest
 ```
 
-## 기여하기
+## Contributing
 
-1. 저장소 Fork
-2. 기능 브랜치 생성 (`git checkout -b feature/새기능`)
-3. 변경사항 커밋 (`git commit -m 'feat: 새 기능 추가'`)
-4. 브랜치에 Push (`git push origin feature/새기능`)
-5. Pull Request 생성
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/new-feature`)
+3. Commit changes (`git commit -m 'feat: add new feature'`)
+4. Push to branch (`git push origin feature/new-feature`)
+5. Create Pull Request
 
-## 라이선스
+## License
 
 MIT License
