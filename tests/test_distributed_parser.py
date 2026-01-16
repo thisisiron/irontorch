@@ -6,7 +6,7 @@ import json
 import argparse
 from omegaconf import OmegaConf, DictConfig
 
-from irontorch.distributed.parser import (
+from irontorch.distributed.config import (
     parse_min_max_nodes,
     local_world_size,
     add_elastic_args,

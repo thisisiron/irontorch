@@ -1,4 +1,4 @@
-from irontorch.distributed.distributed import (
+from irontorch.distributed.comm import (
     get_rank,
     get_local_rank,
     is_primary,
@@ -12,6 +12,6 @@ from irontorch.distributed.distributed import (
     create_local_process_group,
 )
 
-from irontorch.distributed.parser import setup_config
+from irontorch.distributed.config import setup_config
 
 from irontorch.distributed.launch import run

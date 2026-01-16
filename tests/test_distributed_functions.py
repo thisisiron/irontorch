@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
-from irontorch.distributed.distributed import (
+from irontorch.distributed.comm import (
     is_primary,
     get_rank,
     get_world_size,
