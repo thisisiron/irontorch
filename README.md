@@ -263,6 +263,7 @@ import torchvision
 import torchvision.transforms as transforms
 from irontorch import distributed as dist
 from irontorch.utils import set_seed, GradScaler
+from irontorch.models import ModelEMA
 from irontorch.recorder import setup_logging, make_distributed, WandbLogger
 import logging
 
@@ -293,10 +294,11 @@ def main(conf):
         trainset, batch_size=conf.batch_size, sampler=sampler
     )
 
-    # Model and optimizer
+    # Model, EMA, and optimizer
     model = nn.Linear(784, 10).cuda()
     if conf.distributed:
         model = nn.parallel.DistributedDataParallel(model)
+    ema = ModelEMA(model, decay=0.9999)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     criterion = nn.CrossEntropyLoss()
     scaler = GradScaler(mixed_precision=True)
@@ -317,10 +319,13 @@ def main(conf):
                 parameters=model.parameters(),
                 clip_grad=1.0
             )
+            ema.update(model)
 
         logger.info(f"Epoch {epoch}: loss={loss.item():.4f}")
         wandb_logger.log({"loss": loss.item()}, step=epoch)
 
+    # Save EMA model
+    torch.save(ema.module.state_dict(), "model_ema.pt")
     wandb_logger.finish()
 
 if __name__ == "__main__":
