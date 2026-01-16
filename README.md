@@ -334,23 +334,6 @@ if __name__ == "__main__":
     dist.run(main, conf.launch_config.nproc_per_node, conf=conf)
 ```
 
-## Testing
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run tests
-pytest
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/new-feature`)
-3. Commit changes (`git commit -m 'feat: add new feature'`)
-4. Push to branch (`git push origin feature/new-feature`)
-5. Create Pull Request
 
 ## License
 
