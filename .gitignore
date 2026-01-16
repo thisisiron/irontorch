@@ -168,3 +168,9 @@ data/
 # Logging
 tmp/
 wandb/
+
+# AI tools
+.claude
+docs/plans
+.cursor
+CLAUDE.md
