@@ -4,143 +4,293 @@
 
 --------------------------------------------------------------------------------
 
+PyTorch 분산 학습 및 학습 유틸리티 라이브러리
 
-## Getting Started
-### Install Irontorch
-```
+## 설치
+
+```bash
 pip install irontorch
 ```
 
-### Example
-You can set up the distributed environment as follows.
-```python
-from irontorch import distributed as dist
+## 빠른 시작
 
-def main():
+```python
+import argparse
+from irontorch import distributed as dist
+from irontorch.utils import set_seed, GradScaler
+
+def main(conf):
+    set_seed(42, deterministic=True)
+
+    # 학습 코드 작성
     ...
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--config_path", type=str, default="config/fine.yaml")
-parser.add_argument("--epoch", type=int, default=10)
-parser.add_argument("--batch_size", type=int, default=64)
+parser.add_argument("--config_path", type=str, default="config.yaml")
 
 conf = dist.setup_config(parser)
 conf.distributed = conf.n_gpu > 1
 dist.run(main, conf.launch_config.nproc_per_node, conf=conf)
 ```
 
-This is an example of calling the dataset sampler.
-```python
-trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-sampler = dist.get_data_sampler(trainset, shuffle=True, distributed=distributed)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, sampler=sampler)
-```
+## 모듈
 
-### Usage Instructions
+### 1. 분산 학습 (Distributed Training)
 
-#### Setting up the Distributed Environment
-
-To set up the distributed environment, you can use the `setup_config` and `run` functions from the `distributed` module. Here's an example:
+#### 분산 환경 설정
 
 ```python
 from irontorch import distributed as dist
 
-def main():
-    # Your main function code here
-    pass
-
+# 설정 파싱 및 분산 환경 구성
 parser = argparse.ArgumentParser()
-parser.add_argument("--config_path", type=str, default="config/fine.yaml")
-parser.add_argument("--epoch", type=int, default=10)
+parser.add_argument("--config_path", type=str)
 parser.add_argument("--batch_size", type=int, default=64)
 
 conf = dist.setup_config(parser)
 conf.distributed = conf.n_gpu > 1
+
+# 분산 학습 실행
 dist.run(main, conf.launch_config.nproc_per_node, conf=conf)
 ```
 
-In this example, the `setup_config` function is used to parse the command-line arguments and load the configuration file. The `run` function is then used to launch the distributed training.
-
-#### Using the Dataset Sampler
-
-The `get_data_sampler` function from the `distributed` module can be used to create a data sampler for your dataset. Here's an example:
+#### 분산 유틸리티 함수
 
 ```python
+from irontorch import distributed as dist
+
+# 현재 프로세스 정보
+rank = dist.get_rank()              # 전체 rank
+local_rank = dist.get_local_rank()  # 노드 내 rank
+world_size = dist.get_world_size()  # 전체 프로세스 수
+
+# 메인 프로세스 확인
+if dist.is_primary():
+    print("메인 프로세스에서만 실행")
+
+# 프로세스 동기화
+dist.synchronize()
+```
+
+#### 데이터 샘플러
+
+```python
+import torch
 import torchvision
 from irontorch import distributed as dist
 
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,))
-])
-
-trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-sampler = dist.get_data_sampler(trainset, shuffle=True, distributed=distributed)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, sampler=sampler)
+trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True)
+sampler = dist.get_data_sampler(trainset, shuffle=True, distributed=conf.distributed)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, sampler=sampler)
 ```
 
-In this example, the `get_data_sampler` function is used to create a data sampler for the MNIST dataset. The sampler is then passed to the `DataLoader` to create the data loader.
+#### 분산 연산
 
-### Contributing
+```python
+from irontorch import distributed as dist
 
-We welcome contributions to the IronTorch library! If you would like to contribute, please follow these steps:
+# 딕셔너리 값 reduce (평균)
+metrics = {"loss": 0.5, "accuracy": 0.9}
+reduced = dist.reduce_dict(metrics, average=True)
 
-1. Fork the repository on GitHub.
-2. Create a new branch for your feature or bug fix.
-3. Make your changes and commit them with clear and concise commit messages.
-4. Push your changes to your forked repository.
-5. Submit a pull request to the main repository.
+# DataParallel 모델 언래핑
+model = dist.upwrap_parallel(model)
 
-### Running Tests
+# 병렬 모델 확인
+if dist.is_parallel(model):
+    print("DataParallel 또는 DistributedDataParallel 모델")
+```
 
-To run the tests for the IronTorch library, follow these steps:
+### 2. 학습 유틸리티 (Utils)
 
-1. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+#### 시드 설정
 
-2. Run the tests using `pytest`:
-   ```
-   pytest
-   ```
+```python
+from irontorch.utils import set_seed
 
-The tests will be executed, and you will see the test results in the terminal.
+# 재현성을 위한 시드 설정
+set_seed(42)
 
+# 완전한 결정론적 학습 (속도 저하 있음)
+set_seed(42, deterministic=True)
+```
 
+#### Gradient Scaler (Mixed Precision)
 
-### Using the Logging System
+```python
+from irontorch.utils import GradScaler
 
-The improved logging system is configured via `logging_config.yaml`. You can initialize it in your main script and get logger instances:
+scaler = GradScaler(mixed_precision=True)
+
+for data, target in dataloader:
+    # backward + optimizer step + gradient clipping 통합
+    scaler(
+        loss=loss,
+        optimizer=optimizer,
+        parameters=model.parameters(),
+        clip_grad=1.0,        # gradient clipping 값
+        clip_mode="norm",     # "norm", "value", "agc"
+        need_update=True
+    )
+
+# 체크포인트 저장/로드
+state = scaler.state_dict()
+scaler.load_state_dict(state)
+```
+
+#### Gradient Clipping
+
+```python
+from irontorch.utils import dispatch_clip_grad
+
+# Gradient norm clipping (기본)
+dispatch_clip_grad(model.parameters(), value=1.0, mode="norm")
+
+# Gradient value clipping
+dispatch_clip_grad(model.parameters(), value=0.5, mode="value")
+
+# Adaptive Gradient Clipping (AGC)
+dispatch_clip_grad(model.parameters(), value=0.01, mode="agc")
+```
+
+### 3. 로깅 및 실험 추적 (Logging & Tracking)
+
+#### 로깅 설정
 
 ```python
 import logging
 from irontorch.recorder import setup_logging
 
-# Setup logging (ideally at the start of your application)
-# You can optionally provide a path to a custom config file
-# or override the log file path.
-setup_logging(log_file_path="my_experiment.log")
+# 로깅 초기화
+setup_logging(log_file_path="experiment.log")
 
-# Get a logger instance for your module
-logger = logging.getLogger("my_module")
-
-# Log messages
-logger.debug("This is a debug message (will go to file by default).")
-logger.info("Starting the training process...")
-logger.warning("Learning rate seems high.")
-
-try:
-    # Simulate an error
-    result = 1 / 0
-except ZeroDivisionError:
-    logger.exception("An error occurred during calculation!") # Logs exception with traceback
-
-logger.info("Training finished.")
+# 로거 사용
+logger = logging.getLogger(__name__)
+logger.info("학습 시작")
+logger.warning("학습률이 높습니다")
 ```
 
-This setup provides:
-*   Console logging using `rich` for better readability (default level INFO).
-*   File logging in JSON format to `irontorch.log` (or the path specified in `setup_logging`) with rotation (default level DEBUG).
-*   Configuration via `logging_config.yaml` for easy customization.
+#### WandB 실험 추적
 
+```python
+from irontorch.recorder import WandbLogger
+
+# WandB 로거 초기화 (메인 프로세스에서만 활성화)
+wandb_logger = WandbLogger(
+    project="my-project",
+    name="experiment-1",
+    config={"lr": 0.001, "batch_size": 64},
+    tags=["baseline", "v1"]
+)
+
+# 메트릭 로깅
+for epoch in range(epochs):
+    wandb_logger.log({"loss": loss, "accuracy": acc}, step=epoch)
+
+# 학습 종료
+wandb_logger.finish()
+```
+
+## 전체 학습 예제
+
+```python
+import argparse
+import torch
+import torch.nn as nn
+import torchvision
+import torchvision.transforms as transforms
+from irontorch import distributed as dist
+from irontorch.utils import set_seed, GradScaler
+from irontorch.recorder import setup_logging, WandbLogger
+import logging
+
+def main(conf):
+    # 시드 및 로깅 설정
+    set_seed(42, deterministic=True)
+    setup_logging(log_file_path="train.log")
+    logger = logging.getLogger(__name__)
+
+    # WandB 설정 (메인 프로세스만)
+    wandb_logger = WandbLogger(
+        project="mnist",
+        config=vars(conf)
+    )
+
+    # 데이터 로드
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5,), (0.5,))
+    ])
+    trainset = torchvision.datasets.MNIST(
+        root='./data', train=True, download=True, transform=transform
+    )
+    sampler = dist.get_data_sampler(
+        trainset, shuffle=True, distributed=conf.distributed
+    )
+    trainloader = torch.utils.data.DataLoader(
+        trainset, batch_size=conf.batch_size, sampler=sampler
+    )
+
+    # 모델 및 옵티마이저
+    model = nn.Linear(784, 10).cuda()
+    if conf.distributed:
+        model = nn.parallel.DistributedDataParallel(model)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    criterion = nn.CrossEntropyLoss()
+    scaler = GradScaler(mixed_precision=True)
+
+    # 학습 루프
+    for epoch in range(conf.epochs):
+        for data, target in trainloader:
+            data = data.view(-1, 784).cuda()
+            target = target.cuda()
+
+            with torch.amp.autocast("cuda"):
+                output = model(data)
+                loss = criterion(output, target)
+
+            scaler(
+                loss=loss,
+                optimizer=optimizer,
+                parameters=model.parameters(),
+                clip_grad=1.0
+            )
+
+        if dist.is_primary():
+            logger.info(f"Epoch {epoch}: loss={loss.item():.4f}")
+            wandb_logger.log({"loss": loss.item()}, step=epoch)
+
+    wandb_logger.finish()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config_path", type=str, default="config.yaml")
+    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--epochs", type=int, default=10)
+
+    conf = dist.setup_config(parser)
+    conf.distributed = conf.n_gpu > 1
+    dist.run(main, conf.launch_config.nproc_per_node, conf=conf)
+```
+
+## 테스트 실행
+
+```bash
+# 의존성 설치
+pip install -r requirements.txt
+
+# 테스트 실행
+pytest
+```
+
+## 기여하기
+
+1. 저장소 Fork
+2. 기능 브랜치 생성 (`git checkout -b feature/새기능`)
+3. 변경사항 커밋 (`git commit -m 'feat: 새 기능 추가'`)
+4. 브랜치에 Push (`git push origin feature/새기능`)
+5. Pull Request 생성
+
+## 라이선스
+
+MIT License
