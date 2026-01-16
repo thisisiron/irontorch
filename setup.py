@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="irontorch",
-    version="0.0.10",
+    version="0.0.11",
     description="Developer-friendly Pytorch utility library",
     url="https://github.com/thisisiron/irontorch",
     author="Kim Eon",
