@@ -153,7 +153,49 @@ dispatch_clip_grad(model.parameters(), value=0.5, mode="value")
 dispatch_clip_grad(model.parameters(), value=0.01, mode="agc")
 ```
 
-### 3. 로깅 및 실험 추적 (Logging & Tracking)
+### 3. 모델 유틸리티 (Models)
+
+#### Model EMA (Exponential Moving Average)
+
+```python
+from irontorch.models import ModelEMA
+
+model = MyModel().cuda()
+ema = ModelEMA(model, decay=0.9999)
+
+for epoch in range(epochs):
+    model.train()
+    for batch in trainloader:
+        loss = model(batch)
+        loss.backward()
+        optimizer.step()
+        ema.update(model)  # EMA 가중치 업데이트
+
+    # 검증: EMA 모델 사용
+    ema.module.eval()
+    val_loss = validate(ema.module)
+
+# 최종 모델 저장 (EMA 가중치)
+torch.save(ema.module.state_dict(), "model_ema.pt")
+```
+
+**체크포인트 저장/로드 (학습 재개용):**
+```python
+# 저장
+checkpoint = {
+    "model": model.state_dict(),
+    "optimizer": optimizer.state_dict(),
+    "ema": ema.state_dict(),
+}
+torch.save(checkpoint, "checkpoint.pt")
+
+# 로드
+checkpoint = torch.load("checkpoint.pt")
+model.load_state_dict(checkpoint["model"])
+ema.load_state_dict(checkpoint["ema"])
+```
+
+### 4. 로깅 및 실험 추적 (Logging & Tracking)
 
 #### 로깅 설정
 
