@@ -1,24 +1,39 @@
+# -*- coding: utf-8 -*-
+"""Helper utilities for training."""
+
 import os
 import random
 import warnings
 
 import torch
 import numpy as np
-import pkg_resources
+from packaging import version
 
 
 def check_library_version(
     cur_version: str, min_version: str, must_be_same: bool = False
 ) -> bool:
-    current, minimum = (
-        pkg_resources.parse_version(x) for x in (cur_version, min_version)
-    )
-    return (current == minimum) if must_be_same else (current >= minimum)  # bool
+    """Check if current version meets minimum version requirement.
 
+    Args:
+        cur_version: Current version string.
+        min_version: Minimum required version string.
+        must_be_same: If True, versions must match exactly.
 
-def set_seed(seed: str = 42, deterministic: bool = False) -> None:
+    Returns:
+        True if version requirement is met.
     """
-    Set the random seed for reproducibility.
+    current = version.parse(cur_version)
+    minimum = version.parse(min_version)
+    return (current == minimum) if must_be_same else (current >= minimum)
+
+
+def set_seed(seed: int = 42, deterministic: bool = False) -> None:
+    """Set the random seed for reproducibility.
+
+    Args:
+        seed: Random seed value.
+        deterministic: If True, use deterministic algorithms.
     """
     os.environ["PYTHONHASHSEED"] = str(seed)
     random.seed(seed)
@@ -39,7 +54,8 @@ def set_seed(seed: str = 42, deterministic: bool = False) -> None:
             torch.backends.cudnn.deterministic = True
         else:
             warnings.warn(
-                "Torch version is below 2.0.0. Deterministic algorithms may not be fully supported.",
+                "Torch version is below 2.0.0. "
+                "Deterministic algorithms may not be fully supported.",
                 RuntimeWarning,
             )
 

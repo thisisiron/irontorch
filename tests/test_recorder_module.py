@@ -134,34 +134,110 @@ def test_setup_logging_file_not_found(mock_stderr, mock_print, mock_open, reset_
             mock_print.assert_called()
 
 
-# Skip wandb tests since the module is not installed
-@pytest.mark.skip(reason="wandb module not installed")
-@patch("irontorch.distributed.distributed.is_primary")
-def test_wandb_logger_primary_process(mock_is_primary):
-    """Test WandbLogger initialization for primary process."""
-    # This test is skipped
-    pass
+# WandbLogger tests with mocks
+class TestWandbLogger:
+    """Test suite for WandbLogger with mocked dependencies."""
 
+    @patch("irontorch.recorder.trackers.wandb", None)
+    @patch("irontorch.recorder.trackers.dist.is_primary", return_value=True)
+    def test_wandb_not_installed(self, mock_is_primary):
+        """Test WandbLogger when wandb module is not installed."""
+        logger = WandbLogger(project="test_project")
+        assert logger.wandb_instance is None
 
-@pytest.mark.skip(reason="wandb module not installed")
-@patch("irontorch.distributed.distributed.is_primary")
-def test_wandb_logger_non_primary_process(mock_is_primary):
-    """Test WandbLogger initialization for non-primary process."""
-    # This test is skipped
-    pass
+    @patch("irontorch.recorder.trackers.wandb")
+    @patch("irontorch.recorder.trackers.dist.is_primary", return_value=True)
+    def test_wandb_logger_primary_process(self, mock_is_primary, mock_wandb):
+        """Test WandbLogger initialization for primary process."""
+        mock_run = MagicMock()
+        mock_run.name = "test-run-123"
+        mock_wandb.init.return_value = mock_run
 
+        logger = WandbLogger(
+            project="test_project",
+            config={"learning_rate": 0.01},
+            name="test_run"
+        )
 
-@pytest.mark.skip(reason="wandb module not installed")
-@patch("irontorch.distributed.distributed.is_primary")
-def test_wandb_logger_log(mock_is_primary):
-    """Test WandbLogger.log method."""
-    # This test is skipped
-    pass
+        mock_wandb.init.assert_called_once_with(
+            project="test_project",
+            config={"learning_rate": 0.01},
+            group=None,
+            name="test_run",
+            notes=None,
+            resume=None,
+            tags=None,
+            id=None,
+        )
+        assert logger.wandb_instance == mock_run
 
+    @patch("irontorch.recorder.trackers.wandb")
+    @patch("irontorch.recorder.trackers.dist.is_primary", return_value=False)
+    def test_wandb_logger_non_primary_process(self, mock_is_primary, mock_wandb):
+        """Test WandbLogger initialization for non-primary process."""
+        logger = WandbLogger(project="test_project")
 
-@pytest.mark.skip(reason="wandb module not installed")
-@patch("irontorch.distributed.distributed.is_primary")
-def test_wandb_logger_finish(mock_is_primary):
-    """Test WandbLogger.finish method."""
-    # This test is skipped
-    pass 
+        mock_wandb.init.assert_not_called()
+        assert logger.wandb_instance is None
+
+    @patch("irontorch.recorder.trackers.wandb")
+    @patch("irontorch.recorder.trackers.dist.is_primary", return_value=True)
+    def test_wandb_logger_log(self, mock_is_primary, mock_wandb):
+        """Test WandbLogger.log method."""
+        mock_run = MagicMock()
+        mock_run.name = "test-run"
+        mock_wandb.init.return_value = mock_run
+
+        logger = WandbLogger(project="test_project")
+        logger.log({"loss": 0.5, "accuracy": 0.9}, step=10)
+
+        mock_run.log.assert_called_once_with(
+            {"loss": 0.5, "accuracy": 0.9}, step=10
+        )
+
+    @patch("irontorch.recorder.trackers.wandb")
+    @patch("irontorch.recorder.trackers.dist.is_primary", return_value=True)
+    def test_wandb_logger_finish(self, mock_is_primary, mock_wandb):
+        """Test WandbLogger.finish method."""
+        mock_run = MagicMock()
+        mock_run.name = "test-run"
+        mock_wandb.init.return_value = mock_run
+
+        logger = WandbLogger(project="test_project")
+        logger.finish()
+
+        mock_run.finish.assert_called_once()
+        assert logger.wandb_instance is None
+
+    @patch("irontorch.recorder.trackers.wandb")
+    @patch("irontorch.recorder.trackers.dist.is_primary", return_value=True)
+    def test_wandb_logger_init_exception(self, mock_is_primary, mock_wandb):
+        """Test WandbLogger handles initialization exceptions."""
+        mock_wandb.init.side_effect = Exception("Connection failed")
+
+        logger = WandbLogger(project="test_project")
+
+        assert logger.wandb_instance is None
+
+    @patch("irontorch.recorder.trackers.wandb")
+    @patch("irontorch.recorder.trackers.dist.is_primary", return_value=True)
+    def test_wandb_logger_log_exception(self, mock_is_primary, mock_wandb):
+        """Test WandbLogger.log handles exceptions gracefully."""
+        mock_run = MagicMock()
+        mock_run.name = "test-run"
+        mock_run.log.side_effect = Exception("Log failed")
+        mock_wandb.init.return_value = mock_run
+
+        logger = WandbLogger(project="test_project")
+        # Should not raise exception
+        logger.log({"loss": 0.5})
+
+    @patch("irontorch.recorder.trackers.wandb")
+    @patch("irontorch.recorder.trackers.dist.is_primary", return_value=False)
+    def test_wandb_logger_log_non_primary(self, mock_is_primary, mock_wandb):
+        """Test WandbLogger.log does nothing for non-primary process."""
+        logger = WandbLogger(project="test_project")
+        logger.log({"loss": 0.5})
+
+        # wandb.init should not have been called
+        mock_wandb.init.assert_not_called()

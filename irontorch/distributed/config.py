@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+"""Configuration parsing utilities for distributed training."""
+
 import os
 import sys
 import json
@@ -7,17 +10,24 @@ import argparse
 from omegaconf import OmegaConf, DictConfig
 
 import torch
-from torch.distributed.elastic.multiprocessing import Std
 from torch.distributed.elastic.rendezvous.utils import _parse_rendezvous_config
 from torch.distributed.launcher.api import LaunchConfig
 
-from typing import Union, Any, Optional
+from typing import Union
 from pydantic import BaseModel
 
 from irontorch.distributed.schema import MainConfig
 
 
 def parse_min_max_nodes(n_node):
+    """Parse min:max node specification.
+
+    Args:
+        n_node: Node specification in "MIN:MAX" or "N" format.
+
+    Returns:
+        Tuple of (min_node, max_node).
+    """
     ar = n_node.split(":")
 
     if len(ar) == 1:
@@ -33,6 +43,14 @@ def parse_min_max_nodes(n_node):
 
 
 def local_world_size(n_gpu):
+    """Get the local world size (number of processes per node).
+
+    Args:
+        n_gpu: Number of GPUs or "cpu"/"gpu" string.
+
+    Returns:
+        Number of processes to use.
+    """
     try:
         return int(n_gpu)
 
@@ -53,6 +71,7 @@ def local_world_size(n_gpu):
 
 
 def get_rdzv_endpoint(args, max_node):
+    """Get the rendezvous endpoint."""
     if args.rdzv_backend == "static" and not args.rdzv_endpoint:
         dist_url = args.dist_url
 
@@ -62,6 +81,7 @@ def get_rdzv_endpoint(args, max_node):
 
 
 def elastic_config(args):
+    """Create elastic launch configuration from arguments."""
     min_node, max_node = parse_min_max_nodes(args.n_node)
     n_proc = local_world_size(args.n_proc)
 
@@ -84,20 +104,21 @@ def elastic_config(args):
         max_restarts=args.max_restarts,
         monitor_interval=args.monitor_interval,
         start_method=args.start_method,
-        # redirects=Std.from_str(args.redirects),
-        # tee=Std.from_str(args.tee),
-        # log_dir=args.log_dir,
     )
 
     return config
 
 
 def add_elastic_args(parser):
+    """Add elastic launch arguments to an argument parser."""
     parser.add_argument("--n_proc", type=str, default="1")
     parser.add_argument("--n_node", type=str, default="1:1")
     parser.add_argument("--node_rank", type=int, default=0)
 
-    port = 2**15 + 2**14 + hash(os.getuid() if sys.platform != "win32" else 1) % 2**14
+    port = (
+        2**15 + 2**14
+        + hash(os.getuid() if sys.platform != "win32" else 1) % 2**14
+    )
     parser.add_argument("--dist_url", default=f"127.0.0.1:{port}")
 
     parser.add_argument("--rdzv_backend", type=str, default="static")
@@ -114,7 +135,8 @@ def add_elastic_args(parser):
         "--rdzv_conf",
         type=str,
         default="",
-        help="Additional rendezvous configuration (<key 1>=<value 1>, <key 2>=<value 2>, ...).",
+        help="Additional rendezvous configuration "
+             "(<key1>=<value1>, <key2>=<value2>, ...).",
     )
     parser.add_argument(
         "--standalone",
@@ -131,14 +153,19 @@ def add_elastic_args(parser):
         choices=["spawn", "fork", "forkserver"],
     )
     parser.add_argument("--role", type=str, default="default")
-    # parser.add_argument("--log_dir", type=str, default=None)
-    # parser.add_argument("-r", "--redirects", type=str, default="0")
-    # parser.add_argument("-t", "--tee", type=str, default="0")
 
     return parser
 
 
 def load_config(file_path: str) -> Union[DictConfig, None]:
+    """Load configuration from a JSON or YAML file.
+
+    Args:
+        file_path: Path to the configuration file.
+
+    Returns:
+        OmegaConf DictConfig object.
+    """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file '{file_path}' does not exist.")
 
@@ -159,10 +186,20 @@ def load_config(file_path: str) -> Union[DictConfig, None]:
 
 
 def map_config(config: DictConfig, config_class: BaseModel):
+    """Map a DictConfig to a Pydantic model."""
     return config_class(**config)
 
 
 def setup_config(parser=None, args=None):
+    """Set up configuration from command line arguments.
+
+    Args:
+        parser: Optional argument parser. If None, a new one is created.
+        args: Optional list of arguments. If None, sys.argv is used.
+
+    Returns:
+        Configuration object with launch_config and n_gpu attributes.
+    """
     if parser is None:
         parser = argparse.ArgumentParser()
     parser = add_elastic_args(parser)
