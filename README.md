@@ -195,9 +195,9 @@ model.load_state_dict(checkpoint["model"])
 ema.load_state_dict(checkpoint["ema"])
 ```
 
-### 4. 로깅 및 실험 추적 (Logging & Tracking)
+### 4. Logging & Tracking
 
-#### 로깅 설정
+#### Logging Setup
 
 ```python
 import logging
@@ -212,7 +212,27 @@ logger.info("학습 시작")
 logger.warning("학습률이 높습니다")
 ```
 
-#### WandB 실험 추적
+#### Distributed Logger
+
+분산 학습 환경에서 로그 중복 출력을 방지합니다. Primary process(rank 0)에서만 로그를 출력하고, 필요시 `_all` 메서드로 모든 프로세스에서 출력할 수 있습니다.
+
+```python
+import logging
+from irontorch.recorder import make_distributed
+
+# 기존 logger를 분산 환경용으로 래핑
+logger = make_distributed(logging.getLogger(__name__))
+
+# Primary process에서만 출력
+logger.info("학습 시작")
+logger.debug("배치 처리 중")
+
+# 모든 rank에서 출력 (디버깅용)
+logger.info_all("각 GPU 메모리 상태")
+logger.error_all("이 rank에서 문제 발생")
+```
+
+#### WandB Tracking
 
 ```python
 from irontorch.recorder import WandbLogger
@@ -243,14 +263,14 @@ import torchvision
 import torchvision.transforms as transforms
 from irontorch import distributed as dist
 from irontorch.utils import set_seed, GradScaler
-from irontorch.recorder import setup_logging, WandbLogger
+from irontorch.recorder import setup_logging, make_distributed, WandbLogger
 import logging
 
 def main(conf):
     # 시드 및 로깅 설정
     set_seed(42, deterministic=True)
     setup_logging(log_file_path="train.log")
-    logger = logging.getLogger(__name__)
+    logger = make_distributed(logging.getLogger(__name__))
 
     # WandB 설정 (메인 프로세스만)
     wandb_logger = WandbLogger(
@@ -298,9 +318,8 @@ def main(conf):
                 clip_grad=1.0
             )
 
-        if dist.is_primary():
-            logger.info(f"Epoch {epoch}: loss={loss.item():.4f}")
-            wandb_logger.log({"loss": loss.item()}, step=epoch)
+        logger.info(f"Epoch {epoch}: loss={loss.item():.4f}")
+        wandb_logger.log({"loss": loss.item()}, step=epoch)
 
     wandb_logger.finish()
 

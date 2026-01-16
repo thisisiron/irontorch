@@ -4,6 +4,8 @@
 This module provides functions to configure logging based on a YAML file.
 It supports console logging (using rich for better formatting) and
 rotating file logging (in JSON format).
+
+Also provides DistributedLogger for distributed training environments.
 """
 
 import logging
@@ -12,6 +14,8 @@ import sys
 import yaml
 from pathlib import Path
 from typing import Optional, Union
+
+from irontorch import distributed as dist
 
 try:
     import rich.logging  # noqa: F401  # Check if rich is installed
@@ -75,3 +79,96 @@ def setup_logging(
         )
         print("Using basic logging configuration.", file=sys.stderr)
         logging.basicConfig(level=default_level)
+
+
+class DistributedLogger:
+    """Wrapper for logging.Logger that only logs on primary process.
+
+    In distributed training, this prevents duplicate log messages from
+    multiple processes. Use _all suffix methods (e.g., info_all) to
+    log from all processes.
+
+    Example:
+        >>> import logging
+        >>> from irontorch.recorder import make_distributed
+        >>> logger = make_distributed(logging.getLogger(__name__))
+        >>> logger.info("Only on rank 0")
+        >>> logger.info_all("On all ranks")
+    """
+
+    def __init__(self, logger: logging.Logger) -> None:
+        """Initialize DistributedLogger.
+
+        Args:
+            logger: The base logger to wrap.
+        """
+        self._logger = logger
+
+    # Primary-only methods
+    def debug(self, msg, *args, **kwargs) -> None:
+        """Log debug message on primary process only."""
+        if dist.is_primary():
+            self._logger.debug(msg, *args, **kwargs)
+
+    def info(self, msg, *args, **kwargs) -> None:
+        """Log info message on primary process only."""
+        if dist.is_primary():
+            self._logger.info(msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs) -> None:
+        """Log warning message on primary process only."""
+        if dist.is_primary():
+            self._logger.warning(msg, *args, **kwargs)
+
+    def error(self, msg, *args, **kwargs) -> None:
+        """Log error message on primary process only."""
+        if dist.is_primary():
+            self._logger.error(msg, *args, **kwargs)
+
+    def critical(self, msg, *args, **kwargs) -> None:
+        """Log critical message on primary process only."""
+        if dist.is_primary():
+            self._logger.critical(msg, *args, **kwargs)
+
+    # All-ranks methods
+    def debug_all(self, msg, *args, **kwargs) -> None:
+        """Log debug message on all processes."""
+        self._logger.debug(msg, *args, **kwargs)
+
+    def info_all(self, msg, *args, **kwargs) -> None:
+        """Log info message on all processes."""
+        self._logger.info(msg, *args, **kwargs)
+
+    def warning_all(self, msg, *args, **kwargs) -> None:
+        """Log warning message on all processes."""
+        self._logger.warning(msg, *args, **kwargs)
+
+    def error_all(self, msg, *args, **kwargs) -> None:
+        """Log error message on all processes."""
+        self._logger.error(msg, *args, **kwargs)
+
+    def critical_all(self, msg, *args, **kwargs) -> None:
+        """Log critical message on all processes."""
+        self._logger.critical(msg, *args, **kwargs)
+
+    def __getattr__(self, name):
+        """Delegate attribute access to the wrapped logger."""
+        return getattr(self._logger, name)
+
+
+def make_distributed(logger: logging.Logger) -> DistributedLogger:
+    """Wrap a logger to only log on primary process in distributed training.
+
+    Args:
+        logger: The base logger to wrap.
+
+    Returns:
+        A DistributedLogger that wraps the given logger.
+
+    Example:
+        >>> import logging
+        >>> from irontorch.recorder import make_distributed
+        >>> logger = make_distributed(logging.getLogger(__name__))
+        >>> logger.info("This only prints on rank 0")
+    """
+    return DistributedLogger(logger)

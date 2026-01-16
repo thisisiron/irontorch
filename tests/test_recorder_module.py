@@ -241,3 +241,114 @@ class TestWandbLogger:
 
         # wandb.init should not have been called
         mock_wandb.init.assert_not_called()
+
+
+# DistributedLogger tests
+class TestDistributedLogger:
+    """Test suite for DistributedLogger."""
+
+    def test_make_distributed_returns_distributed_logger(self):
+        """Test that make_distributed wraps a logger in DistributedLogger."""
+        from irontorch.recorder import make_distributed, DistributedLogger
+
+        base_logger = logging.getLogger("test_logger")
+        distributed_logger = make_distributed(base_logger)
+
+        assert isinstance(distributed_logger, DistributedLogger)
+
+    @patch("irontorch.distributed.is_primary", return_value=True)
+    def test_logs_on_primary_in_non_distributed(self, mock_is_primary, caplog):
+        """Test that logger outputs when on primary process."""
+        from irontorch.recorder import make_distributed
+
+        base_logger = logging.getLogger("test_primary")
+        base_logger.setLevel(logging.DEBUG)
+        logger = make_distributed(base_logger)
+
+        with caplog.at_level(logging.INFO):
+            logger.info("테스트 메시지")
+
+        assert "테스트 메시지" in caplog.text
+
+    @patch("irontorch.distributed.is_primary", return_value=False)
+    def test_silent_on_non_primary(self, mock_is_primary, caplog):
+        """Test that logger is silent when on non-primary process."""
+        from irontorch.recorder import make_distributed
+
+        base_logger = logging.getLogger("test_non_primary")
+        base_logger.setLevel(logging.DEBUG)
+        logger = make_distributed(base_logger)
+
+        with caplog.at_level(logging.INFO):
+            logger.info("이 메시지는 출력되지 않아야 함")
+
+        assert "이 메시지는 출력되지 않아야 함" not in caplog.text
+
+    @patch("irontorch.distributed.is_primary", return_value=False)
+    def test_info_all_outputs_on_non_primary(self, mock_is_primary, caplog):
+        """Test that info_all outputs on non-primary process."""
+        from irontorch.recorder import make_distributed
+
+        base_logger = logging.getLogger("test_info_all")
+        base_logger.setLevel(logging.DEBUG)
+        logger = make_distributed(base_logger)
+
+        with caplog.at_level(logging.INFO):
+            logger.info_all("모든 rank에서 출력")
+
+        assert "모든 rank에서 출력" in caplog.text
+
+    def test_access_original_logger_attributes(self):
+        """Test that original logger attributes are accessible."""
+        from irontorch.recorder import make_distributed
+
+        base_logger = logging.getLogger("test_attrs")
+        base_logger.setLevel(logging.WARNING)
+        logger = make_distributed(base_logger)
+
+        assert logger.name == "test_attrs"
+        assert logger.level == logging.WARNING
+
+    @patch("irontorch.distributed.is_primary", return_value=True)
+    def test_all_log_levels_work(self, mock_is_primary, caplog):
+        """Test that all log levels (debug, info, warning, error, critical) work."""
+        from irontorch.recorder import make_distributed
+
+        base_logger = logging.getLogger("test_levels")
+        base_logger.setLevel(logging.DEBUG)
+        logger = make_distributed(base_logger)
+
+        with caplog.at_level(logging.DEBUG):
+            logger.debug("debug message")
+            logger.info("info message")
+            logger.warning("warning message")
+            logger.error("error message")
+            logger.critical("critical message")
+
+        assert "debug message" in caplog.text
+        assert "info message" in caplog.text
+        assert "warning message" in caplog.text
+        assert "error message" in caplog.text
+        assert "critical message" in caplog.text
+
+    @patch("irontorch.distributed.is_primary", return_value=False)
+    def test_all_log_levels_all_methods_work(self, mock_is_primary, caplog):
+        """Test that all _all methods work on non-primary."""
+        from irontorch.recorder import make_distributed
+
+        base_logger = logging.getLogger("test_levels_all")
+        base_logger.setLevel(logging.DEBUG)
+        logger = make_distributed(base_logger)
+
+        with caplog.at_level(logging.DEBUG):
+            logger.debug_all("debug all")
+            logger.info_all("info all")
+            logger.warning_all("warning all")
+            logger.error_all("error all")
+            logger.critical_all("critical all")
+
+        assert "debug all" in caplog.text
+        assert "info all" in caplog.text
+        assert "warning all" in caplog.text
+        assert "error all" in caplog.text
+        assert "critical all" in caplog.text
